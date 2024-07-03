@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Include Tabulator CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.0.8/dist/css/tabulator.min.css">
+  </head>
+  <body>
+    <p>Editable Table</p>
+    <div id="example-table"></div>
+
+    <!-- Include Tabulator JS -->
+    <script src="https://unpkg.com/tabulator-tables@5.0.8/dist/js/tabulator.min.js"></script>
+    
+    <script>
+      // Define the columns
+      const columnDefs = [
+        { title: "Preprint ID", field: "preprintId", headerSort: false, visible: false },
+        { title: "Preprint Title", field: "preprintTitle", headerSort: false },
+        { title: "Domain", field: "domain", headerSort: false },
+        { title: "Reviewer Email", field: "reviewerEmail", headerSort: false },
+        { 
+          title: "Status", 
+          field: "status", 
+          editor: "select", 
+          editorParams: { 
+            values: ["Unchecked", "Invite", "Invite Backup", "Reject", "Fixed"] 
+          } 
+        },
+        { title: "Quality Check Reviewer Comments", field: "qualityCheckReviewerComments", editor: "input" },
+        { title: "Student Reply Comments", field: "studentReplyComments", editor: "input" }
+      ];
+
+      // Define the data
+      const rowData = [
+        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "hey@gmail.com", status: "Reject", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "hi@gmail.com", status: "Invite", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "bog@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "reily@gmail.com", status: "Invite Backup", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "reckblBrsoAetsXWF", preprintTitle: "Associations between SA...", domain: "Public Health", reviewerEmail: "live@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "reily@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "more@gmail.com", status: "Fixed", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "more@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
+        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "fin@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" }
+      ];
+
+      // Initialize Tabulator
+      const table = new Tabulator("#example-table", {
+        data: rowData, // Load row data into Tabulator
+        columns: columnDefs, // Define table columns
+        groupBy: "preprintId", // Group rows by Preprint ID
+        layout: "fitColumns", // Fit columns to width of table
+        movableColumns: true, // Allow column order to be changed
+        groupStartOpen: true, // Start with groups expanded
+        cellEdited: function(cell) {
+          // Triggered when cell is edited
+          console.log("Data after change is: ", cell.getData());
+        }
+      });
+    </script>
+  </body>
+</html>
