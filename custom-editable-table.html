@@ -1,0 +1,193 @@
+<!-- 
+Currently testing the AG Grid Enterprise table on this page:
+https://studio.softr.io/applications/209ea2b7-beac-4679-8c03-4a0f8bf1128c/pages/b52165ae-910c-4e0a-916c-d928a53089eb
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- In the Page Settings Custom Code Block paste this code that exists between the <head></head> tags -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-alpine.css"
+    />
+    <script src="https://unpkg.com/ag-grid-enterprise/dist/ag-grid-enterprise.min.js"></script>
+    <!-- In the Page Settings Custom Code Block paste this code that exists between the <head></head> tags -->
+  </head>
+  <body>
+    <!-- On the page itself, add a Custom Code Block and paste code that exists between the <body></body> tags -->
+    <p>Editable Testing Table</p>
+
+    <div
+      id="myGrid"
+      style="height: 600px; width: 100%"
+      class="ag-theme-alpine"
+    ></div>
+
+    <script>
+      // Specify the columns
+      const columnDefs = [
+        {
+          field: 'preprintId',
+          headerName: 'Preprint ID',
+          rowGroup: true,
+          hide: true,
+        },
+        { field: 'preprintTitle', headerName: 'Preprint Title' },
+        { field: 'domain', headerName: 'Domain' },
+        { field: 'reviewerEmail', headerName: 'Reviewer Email' },
+        {
+          field: 'status',
+          headerName: 'Status',
+          editable: true,
+          cellEditor: 'agSelectCellEditor',
+          cellEditorParams: {
+            values: ['Unchecked', 'Invite', 'Invite Backup', 'Reject', 'Fixed'],
+          },
+        },
+        {
+          field: 'qualityCheckReviewerComments',
+          headerName: 'Quality Check Reviewer Comments',
+          editable: true,
+        },
+        {
+          field: 'studentReplyComments',
+          headerName: 'Student Reply Comments',
+          editable: true,
+        },
+      ];
+
+      // Specify the data
+      const rowData = [
+        {
+          preprintId: 'rechg8nNitg6HXQtl',
+          preprintTitle: 'Day 3 parasitemia and PI...',
+          domain: 'Medical Sciences',
+          reviewerEmail: 'hey@gmail.com',
+          status: 'Reject',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'rechg8nNitg6HXQtl',
+          preprintTitle: 'Day 3 parasitemia and PI...',
+          domain: 'Medical Sciences',
+          reviewerEmail: 'hi@gmail.com',
+          status: 'Invite',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'rechg8nNitg6HXQtl',
+          preprintTitle: 'Day 3 parasitemia and PI...',
+          domain: 'Medical Sciences',
+          reviewerEmail: 'bog@gmail.com',
+          status: 'Unchecked',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'rechg8nNitg6HXQtl',
+          preprintTitle: 'Day 3 parasitemia and PI...',
+          domain: 'Medical Sciences',
+          reviewerEmail: 'reily@gmail.com',
+          status: 'Invite Backup',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'reckblBrsoAetsXWF',
+          preprintTitle: 'Associations between SA...',
+          domain: 'Public Health',
+          reviewerEmail: 'live@gmail.com',
+          status: 'Unchecked',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'recv5kJmyRTZuOUXT',
+          preprintTitle: 'Streptococcus pneumonia...',
+          domain: 'Public Health',
+          reviewerEmail: 'reily@gmail.com',
+          status: 'Unchecked',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'recv5kJmyRTZuOUXT',
+          preprintTitle: 'Streptococcus pneumonia...',
+          domain: 'Public Health',
+          reviewerEmail: 'more@gmail.com',
+          status: 'Fixed',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'recv5kJmyRTZuOUXT',
+          preprintTitle: 'Streptococcus pneumonia...',
+          domain: 'Public Health',
+          reviewerEmail: 'more@gmail.com',
+          status: 'Unchecked',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+        {
+          preprintId: 'recv5kJmyRTZuOUXT',
+          preprintTitle: 'Streptococcus pneumonia...',
+          domain: 'Public Health',
+          reviewerEmail: 'fin@gmail.com',
+          status: 'Unchecked',
+          qualityCheckReviewerComments: '',
+          studentReplyComments: '',
+        },
+      ];
+
+      // Let the grid know which columns and data to use
+      const gridOptions = {
+        columnDefs: columnDefs,
+        rowData: rowData,
+        groupUseEntireRow: true,
+        animateRows: true,
+        groupDefaultExpanded: -1, // This line expands all groups by default
+        autoSizeStrategy: {
+          // type: 'fitGridWidth',
+          type: 'fitCellContents',
+          defaultMinWidth: 100,
+          columnLimits: [
+            {
+              colId: 'domain',
+              minWidth: 75,
+              maxWidth: 150,
+              //minWidth: 900
+            },
+          ],
+        },
+        autoGroupColumnDef: {
+          headerName: 'Preprint ID', // naming your grouped column
+          field: 'preprintId',
+          // minWidth: 200
+        },
+        defaultColDef: {
+          flex: 1,
+          // minWidth: 250,
+          sortable: true,
+          filter: true,
+          resizable: true,
+        },
+        onCellValueChanged: (params) => {
+          console.log('Data after change is: ', params.data);
+        },
+      };
+
+      // Get the grid div and create the grid
+      document.addEventListener('DOMContentLoaded', () => {
+        const eGridDiv = document.querySelector('#myGrid');
+        new agGrid.Grid(eGridDiv, gridOptions);
+      });
+    </script>
+    <!-- On the page itself, add a Custom Code Block and paste code that exists between the <body></body> tags -->
+  </body>
+</html>
