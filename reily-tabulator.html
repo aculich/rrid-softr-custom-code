@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Include Tabulator CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.0.8/dist/css/tabulator.min.css">
+  </head>
+  <body>
+    <p>Editable Table</p>
+    <div id="example-table"></div>
+
+    <!-- Include Tabulator JS -->
+    <script src="https://unpkg.com/tabulator-tables@5.0.8/dist/js/tabulator.min.js"></script>
+    <script>
+      const airtableApiKey = 'YOUR_AIRTABLE_API_KEY';
+      const baseId = 'YOUR_BASE_ID';
+      const tableId = 'tblHRiK0758oaO4jI';
+
+      // Function to fetch data from Airtable
+      async function fetchData() {
+        const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}?api_key=${airtableApiKey}`);
+        const data = await response.json();
+        return data.records.map(record => ({
+          id: record.id,
+          ...record.fields
+        }));
+      }
+
+      // Function to update a record in Airtable
+      async function updateRecord(recordId, fields) {
+        const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}?api_key=${airtableApiKey}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ fields })
+        });
+        const data = await response.json();
+        return data;
+      }
+
+      // Define the columns
+      const columnDefs = [
+        { title: "Preprint ID", field: "Preprint ID", headerSort: false, visible: false },
+        { title: "Preprint Title", field: "Preprint Title", headerSort: false },
+        { title: "Domain", field: "Domain", headerSort: false },
+        { title: "Reviewer Email", field: "Reviewer Email", headerSort: false },
+        { 
+          title: "Status", 
+          field: "Status", 
+          editor: "select", 
+          editorParams: { 
+            values: ["Unchecked", "Invite", "Invite Backup", "Reject", "Fixed"] 
+          } 
+        },
+        { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input" },
+        { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input" }
+      ];
+
+      // Initialize Tabulator
+      document.addEventListener('DOMContentLoaded', async () => {
+        const tableData = await fetchData();
+
+        const table = new Tabulator("#example-table", {
+          data: tableData, // Load row data into Tabulator
+          columns: columnDefs, // Define table columns
+          groupBy: "Preprint ID", // Group rows by Preprint ID
+          layout: "fitColumns", // Fit columns to width of table
+          movableColumns: true, // Allow column order to be changed
+          groupStartOpen: true, // Start with groups expanded
+          cellEdited: async function(cell) {
+            // Get the logged-in user's email
+            const userEmail = window.Softr.currentUser.email;
+
+            // Triggered when cell is edited
+            const recordId = cell.getRow().getData().id;
+            const updatedField = {
+              ...cell.getRow().getData(),
+              "Quality Checker": userEmail // Add the email to the update
+            };
+            updatedField[cell.getField()] = cell.getValue();
+            await updateRecord(recordId, updatedField);
+            console.log("Data after change is: ", cell.getData());
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
