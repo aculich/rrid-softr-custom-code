@@ -3,6 +3,11 @@
   <head>
     <!-- Include Tabulator CSS -->
     <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.0.8/dist/css/tabulator.min.css">
+    <style>
+      .tabulator .tabulator-cell {
+        white-space: pre-wrap; /* Allow text to wrap */
+      }
+    </style>
   </head>
   <body>
     <p>Editable Table</p>
@@ -99,57 +104,62 @@
 
       // Function to initialize Tabulator table
    // Function to initialize Tabulator table
+// Function to initialize Tabulator table
 async function initializeTable() {
   const tableData = await fetchData();
   console.log('Table data:', tableData);
 
   const columnDefs = [
-    { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", headerSort: false, visible: false },
-    { title: "Preprint Title", field: "Preprint Title", headerSort: false },
-    { title: "Domain", field: "Domain", headerSort: false },
-    { title: "Reviewer Email", field: "Reviewer Email", headerSort: false },
-    { title: "Status", field: "Status", editor: "select", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }},
-    { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input" },
-    { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input" },
-    { title: "First Name (Proposed Reviewer)", field: "First Name (Proposed Reviewer)", headerSort: false },
-    { title: "Last Name (Proposed Reviewer)", field: "Last Name (Proposed Reviewer)", headerSort: false },
-    { title: "Back up reviewer?", field: "Back up reviewer?", headerSort: false, formatter: "tickCross", editor: true },
-    { title: "Invite Backup For...", field: "Invite Backup For...", headerSort: false },
-    { title: "Highest Degree", field: "Highest Degree", headerSort: false },
-    { title: "Title", field: "Title", headerSort: false },
-    { title: "Affiliation", field: "Affiliation", headerSort: false },
-    { title: "Justification for Invite", field: "Justification for Invite", headerSort: false },
-    { title: "Subdiscipline", field: "Subdiscipline", headerSort: false },
-    { title: "Link to Profile", field: "Link to Profile", headerSort: false, formatter: "link" },
-    { title: "Link to Publications", field: "Link to Publications", headerSort: false, formatter: "link" },
-    { title: "Justification if not institutional email", field: "Justification if not institutional email", headerSort: false },
-    { title: "Student", field: "Student", headerSort: false },
-    { title: "Student Email", field: "Student Email", headerSort: false },
-    { title: "Email of Quality Checker", field: "Email of Quality Checker", headerSort: false },
-    { title: "First + Last Name", field: "First + Last Name", headerSort: false },
-    { title: "Recent Reviewer?", field: "Recent Reviewer?", headerSort: false },
-    { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", headerSort: false, formatter: "link" },
-    { title: "COI NOTICE", field: "COI NOTICE", headerSort: false },
-    { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)", headerSort: false },
-    { title: "USER ID", field: "USER ID", headerSort: false },
-    { title: "Date of Proposal", field: "Date of Proposal", headerSort: false },
-    { title: "Flagged issues", field: "Flagged issues", headerSort: false },
-    { title: "Preprint Info ONLY", field: "Preprint Info ONLY", headerSort: false },
-    { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false },
-    { title: "Invite tracker", field: "Invite tracker", headerSort: false },
-    { title: "Unchecked tracker", field: "Unchecked tracker", headerSort: false },
-    { title: "record id", field: "record id", headerSort: false },
-    { title: "Date of Quality Check", field: "Date of Quality Check", headerSort: false },
-    { title: "miniExtensions", field: "miniExtensions", headerSort: false }
+    { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", headerSort: false, visible: false, width: "fitData" },
+    { title: "Preprint Title", field: "Preprint Title", headerSort: false, width: "fitData" },
+    { title: "Domain", field: "Domain", headerSort: false, width: "fitData" },
+    { title: "Reviewer Email", field: "Reviewer Email", headerSort: false, width: "fitData" },
+    { title: "Status", field: "Status", editor: "select", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }, width: "fitData" },
+    { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input", width: "fitData" },
+    { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input", width: "fitData" },
+    { title: "First Name (Proposed Reviewer)", field: "First Name (Proposed Reviewer)", headerSort: false, width: "fitData" },
+    { title: "Last Name (Proposed Reviewer)", field: "Last Name (Proposed Reviewer)", headerSort: false, width: "fitData" },
+    { title: "Back up reviewer?", field: "Back up reviewer?", headerSort: false, formatter: "tickCross", editor: true, width: "fitData" },
+    { title: "Invite Backup For...", field: "Invite Backup For...", headerSort: false, width: "fitData" },
+    { title: "Highest Degree", field: "Highest Degree", headerSort: false, width: "fitData" },
+    { title: "Title", field: "Title", headerSort: false, width: "fitData" },
+    { title: "Affiliation", field: "Affiliation", headerSort: false, width: "fitData" },
+    { title: "Justification for Invite", field: "Justification for Invite", headerSort: false, width: "fitData" },
+    { title: "Subdiscipline", field: "Subdiscipline", headerSort: false, width: "fitData" },
+    { title: "Link to Profile", field: "Link to Profile", headerSort: false, formatter: "link", width: "fitData" },
+    { title: "Link to Publications", field: "Link to Publications", headerSort: false, formatter: "link", width: "fitData" },
+    { title: "Justification if not institutional email", field: "Justification if not institutional email", headerSort: false, width: "fitData" },
+    { title: "Student", field: "Student", headerSort: false, width: "fitData" },
+    { title: "Student Email", field: "Student Email", headerSort: false, width: "fitData" },
+    { title: "Email of Quality Checker", field: "Email of Quality Checker", headerSort: false, width: "fitData" },
+    { title: "First + Last Name", field: "First + Last Name", headerSort: false, width: "fitData" },
+    { title: "Recent Reviewer?", field: "Recent Reviewer?", headerSort: false, width: "fitData" },
+    { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", headerSort: false, formatter: "link", width: "fitData" },
+    { title: "COI NOTICE", field: "COI NOTICE", headerSort: false, width: "fitData" },
+    { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)", headerSort: false, width: "fitData" },
+    { title: "USER ID", field: "USER ID", headerSort: false, width: "fitData" },
+    { title: "Date of Proposal", field: "Date of Proposal", headerSort: false, width: "fitData" },
+    { title: "Flagged issues", field: "Flagged issues", headerSort: false, width: "fitData" },
+    { title: "Preprint Info ONLY", field: "Preprint Info ONLY", headerSort: false, width: "fitData" },
+    { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false, width: "fitData" },
+    { title: "Invite tracker", field: "Invite tracker", headerSort: false, width: "fitData" },
+    { title: "Unchecked tracker", field: "Unchecked tracker", headerSort: false, width: "fitData" },
+    { title: "record id", field: "record id", headerSort: false, width: "fitData" },
+    { title: "Date of Quality Check", field: "Date of Quality Check", headerSort: false, width: "fitData" },
+    { title: "miniExtensions", field: "miniExtensions", headerSort: false, width: "fitData" }
   ];
 
   const table = new Tabulator("#example-table", {
     data: tableData, // Load row data into Tabulator
     columns: columnDefs, // Define table columns
-    layout: "fitColumns", // Fit columns to width of table
+    layout: "fitDataStretch", // Fit columns to width of data and stretch to fit the table
     movableColumns: true, // Allow column order to be changed
     groupBy: "Preprint ID (pulled)", // Group rows by Preprint ID
     groupStartOpen: false, // Start with groups collapsed
+    groupHeader: function(value, count, data) {
+      // Display Preprint Title instead of Preprint ID in the group header
+      return data[0]["Preprint Title"] + "<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
+    },
     cellEdited: function(cell) {
       // Triggered when a cell is edited
       const updatedData = cell.getData();
@@ -175,6 +185,8 @@ async function initializeTable() {
 
 // Initialize the table on page load
 document.addEventListener("DOMContentLoaded", initializeTable);
+
+
 
          </script>
     </body>
