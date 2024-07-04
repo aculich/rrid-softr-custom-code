@@ -11,78 +11,172 @@
     <!-- Include Tabulator JS -->
     <script src="https://unpkg.com/tabulator-tables@5.0.8/dist/js/tabulator.min.js"></script>
     <script>
-      const airtableApiKey = 'YOUR_AIRTABLE_API_KEY';
-      const baseId = 'YOUR_BASE_ID';
+      // Replace with your Airtable Personal Access Token, Base ID, and Table ID
+      const airtableToken = 'patxvMWE66lCprz7O.5ff60f4f628a145176a5c5badf898a8d495ae2f704b0895b2cf2d50fffca5c27';
+      const baseId = 'appAYosfmfSuHWiBT';
       const tableId = 'tblHRiK0758oaO4jI';
 
       // Function to fetch data from Airtable
       async function fetchData() {
-        const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}?api_key=${airtableApiKey}`);
-        const data = await response.json();
-        return data.records.map(record => ({
-          id: record.id,
-          ...record.fields
-        }));
+        console.log('Fetching data from Airtable...');
+        try {
+          const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}`, {
+            headers: {
+              'Authorization': `Bearer ${airtableToken}`
+            }
+          });
+          if (!response.ok) {
+            throw new Error(`Error fetching data: ${response.statusText}`);
+          }
+          const data = await response.json();
+          console.log('Data fetched:', data);
+          return data.records.map(record => ({
+            id: record.id,
+            "Preprint ID (pulled)": record.fields["Preprint ID (pulled)"],
+            "Preprint Title": record.fields["Preprint Title"],
+            "Domain": record.fields["Domain"],
+            "Reviewer Email": record.fields["Reviewer Email"],
+            "Status": record.fields["Status"],
+            "Quality Check Reviewer Comments": record.fields["Quality Check Reviewer Comments"],
+            "Student Reply Comments": record.fields["Student Reply Comments"],
+            "First Name (Proposed Reviewer)": record.fields["First Name (Proposed Reviewer)"],
+            "Last Name (Proposed Reviewer)": record.fields["Last Name (Proposed Reviewer)"],
+            "Back up reviewer?": record.fields["Back up reviewer?"],
+            "Invite Backup For...": record.fields["Invite Backup For..."],
+            "Highest Degree": record.fields["Highest Degree"],
+            "Title": record.fields["Title"],
+            "Affiliation": record.fields["Affiliation"],
+            "Justification for Invite": record.fields["Justification for Invite"],
+            "Subdiscipline": record.fields["Subdiscipline"],
+            "Link to Profile": record.fields["Link to Profile"],
+            "Link to Publications": record.fields["Link to Publications"],
+            "Justification if not institutional email": record.fields["Justification if not institutional email"],
+            "Student": record.fields["Student"],
+            "Student Email": record.fields["Student Email"],
+            "Email of Quality Checker": record.fields["Email of Quality Checker"],
+            "First + Last Name": record.fields["First + Last Name"],
+            "Recent Reviewer?": record.fields["Recent Reviewer?"],
+            "DOI of Nearest Neighbors Paper": record.fields["DOI of Nearest Neighbors Paper"],
+            "COI NOTICE": record.fields["COI NOTICE"],
+            "Preprint Status (from Preprint Info ONLY)": record.fields["Preprint Status (from Preprint Info ONLY)"],
+            "USER ID": record.fields["USER ID"],
+            "Date of Proposal": record.fields["Date of Proposal"],
+            "Flagged issues": record.fields["Flagged issues"],
+            "Preprint Info ONLY": record.fields["Preprint Info ONLY"],
+            "Rank (from Preprint Info ONLY)": record.fields["Rank (from Preprint Info ONLY)"],
+            "Invite tracker": record.fields["Invite tracker"],
+            "Unchecked tracker": record.fields["Unchecked tracker"],
+            "record id": record.fields["record id"],
+            "Date of Quality Check": record.fields["Date of Quality Check"],
+            "miniExtensions": record.fields["miniExtensions"]
+          }));
+        } catch (error) {
+          console.error(error);
+          return [];
+        }
       }
 
       // Function to update a record in Airtable
       async function updateRecord(recordId, fields) {
-        const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}?api_key=${airtableApiKey}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ fields })
-        });
-        const data = await response.json();
-        return data;
+        try {
+          const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${airtableToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fields })
+          });
+          if (!response.ok) {
+            throw new Error(`Error updating record: ${response.statusText}`);
+          }
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error(error);
+        }
       }
 
-      // Define the columns
-      const columnDefs = [
-        { title: "Preprint ID", field: "Preprint ID", headerSort: false, visible: false },
-        { title: "Preprint Title", field: "Preprint Title", headerSort: false },
-        { title: "Domain", field: "Domain", headerSort: false },
-        { title: "Reviewer Email", field: "Reviewer Email", headerSort: false },
-        { 
-          title: "Status", 
-          field: "Status", 
-          editor: "select", 
-          editorParams: { 
-            values: ["Unchecked", "Invite", "Invite Backup", "Reject", "Fixed"] 
-          } 
-        },
-        { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input" },
-        { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input" }
-      ];
+      // Function to initialize Tabulator table
+   // Function to initialize Tabulator table
+async function initializeTable() {
+  const tableData = await fetchData();
+  console.log('Table data:', tableData);
 
-      // Initialize Tabulator
-      document.addEventListener('DOMContentLoaded', async () => {
-        const tableData = await fetchData();
+  const columnDefs = [
+    { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", headerSort: false, visible: false },
+    { title: "Preprint Title", field: "Preprint Title", headerSort: false },
+    { title: "Domain", field: "Domain", headerSort: false },
+    { title: "Reviewer Email", field: "Reviewer Email", headerSort: false },
+    { title: "Status", field: "Status", editor: "select", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }},
+    { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input" },
+    { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input" },
+    { title: "First Name (Proposed Reviewer)", field: "First Name (Proposed Reviewer)", headerSort: false },
+    { title: "Last Name (Proposed Reviewer)", field: "Last Name (Proposed Reviewer)", headerSort: false },
+    { title: "Back up reviewer?", field: "Back up reviewer?", headerSort: false, formatter: "tickCross", editor: true },
+    { title: "Invite Backup For...", field: "Invite Backup For...", headerSort: false },
+    { title: "Highest Degree", field: "Highest Degree", headerSort: false },
+    { title: "Title", field: "Title", headerSort: false },
+    { title: "Affiliation", field: "Affiliation", headerSort: false },
+    { title: "Justification for Invite", field: "Justification for Invite", headerSort: false },
+    { title: "Subdiscipline", field: "Subdiscipline", headerSort: false },
+    { title: "Link to Profile", field: "Link to Profile", headerSort: false, formatter: "link" },
+    { title: "Link to Publications", field: "Link to Publications", headerSort: false, formatter: "link" },
+    { title: "Justification if not institutional email", field: "Justification if not institutional email", headerSort: false },
+    { title: "Student", field: "Student", headerSort: false },
+    { title: "Student Email", field: "Student Email", headerSort: false },
+    { title: "Email of Quality Checker", field: "Email of Quality Checker", headerSort: false },
+    { title: "First + Last Name", field: "First + Last Name", headerSort: false },
+    { title: "Recent Reviewer?", field: "Recent Reviewer?", headerSort: false },
+    { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", headerSort: false, formatter: "link" },
+    { title: "COI NOTICE", field: "COI NOTICE", headerSort: false },
+    { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)", headerSort: false },
+    { title: "USER ID", field: "USER ID", headerSort: false },
+    { title: "Date of Proposal", field: "Date of Proposal", headerSort: false },
+    { title: "Flagged issues", field: "Flagged issues", headerSort: false },
+    { title: "Preprint Info ONLY", field: "Preprint Info ONLY", headerSort: false },
+    { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false },
+    { title: "Invite tracker", field: "Invite tracker", headerSort: false },
+    { title: "Unchecked tracker", field: "Unchecked tracker", headerSort: false },
+    { title: "record id", field: "record id", headerSort: false },
+    { title: "Date of Quality Check", field: "Date of Quality Check", headerSort: false },
+    { title: "miniExtensions", field: "miniExtensions", headerSort: false }
+  ];
 
-        const table = new Tabulator("#example-table", {
-          data: tableData, // Load row data into Tabulator
-          columns: columnDefs, // Define table columns
-          groupBy: "Preprint ID", // Group rows by Preprint ID
-          layout: "fitColumns", // Fit columns to width of table
-          movableColumns: true, // Allow column order to be changed
-          groupStartOpen: true, // Start with groups expanded
-          cellEdited: async function(cell) {
-            // Get the logged-in user's email
-            const userEmail = window.Softr.currentUser.email;
+  const table = new Tabulator("#example-table", {
+    data: tableData, // Load row data into Tabulator
+    columns: columnDefs, // Define table columns
+    layout: "fitColumns", // Fit columns to width of table
+    movableColumns: true, // Allow column order to be changed
+    groupBy: "Preprint ID (pulled)", // Group rows by Preprint ID
+    groupStartOpen: false, // Start with groups collapsed
+    cellEdited: function(cell) {
+      // Triggered when a cell is edited
+      const updatedData = cell.getData();
+      const recordId = updatedData.id;
 
-            // Triggered when cell is edited
-            const recordId = cell.getRow().getData().id;
-            const updatedField = {
-              ...cell.getRow().getData(),
-              "Quality Checker": userEmail // Add the email to the update
-            };
-            updatedField[cell.getField()] = cell.getValue();
-            await updateRecord(recordId, updatedField);
-            console.log("Data after change is: ", cell.getData());
-          }
+      // Fields to update in Airtable
+      const fields = {
+        "Status": updatedData["Status"],
+        "Quality Check Reviewer Comments": updatedData["Quality Check Reviewer Comments"],
+        "Student Reply Comments": updatedData["Student Reply Comments"]
+      };
+
+      updateRecord(recordId, fields)
+        .then(updatedRecord => {
+          console.log("Record updated successfully:", updatedRecord);
+        })
+        .catch(error => {
+          console.error("Error updating record:", error);
         });
-      });
-    </script>
-  </body>
+    }
+  });
+}
+
+// Initialize the table on page load
+document.addEventListener("DOMContentLoaded", initializeTable);
+
+         </script>
+    </body>
 </html>
+      
