@@ -68,12 +68,7 @@
             "Date of Proposal": record.fields["Date of Proposal"],
             "Flagged issues": record.fields["Flagged issues"],
             "Preprint Info ONLY": record.fields["Preprint Info ONLY"],
-            "Rank (from Preprint Info ONLY)": record.fields["Rank (from Preprint Info ONLY)"],
-            "Invite tracker": record.fields["Invite tracker"],
-            "Unchecked tracker": record.fields["Unchecked tracker"],
-            "record id": record.fields["record id"],
-            "Date of Quality Check": record.fields["Date of Quality Check"],
-            "miniExtensions": record.fields["miniExtensions"]
+            "Rank (from Preprint Info ONLY)": record.fields["Rank (from Preprint Info ONLY)"]
           }));
         } catch (error) {
           console.error(error);
@@ -111,8 +106,6 @@ async function initializeTable() {
 
   const columnDefs = [
     { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", headerSort: false, visible: false, width: "fitData" },
-    { title: "Preprint Title", field: "Preprint Title", headerSort: false, width: "fitData" },
-    { title: "Domain", field: "Domain", headerSort: false, width: "fitData" },
     { title: "Reviewer Email", field: "Reviewer Email", headerSort: false, width: "fitData" },
     { title: "Status", field: "Status", editor: "select", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }, width: "fitData" },
     { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input", width: "fitData" },
@@ -141,12 +134,7 @@ async function initializeTable() {
     { title: "Date of Proposal", field: "Date of Proposal", headerSort: false, width: "fitData" },
     { title: "Flagged issues", field: "Flagged issues", headerSort: false, width: "fitData" },
     { title: "Preprint Info ONLY", field: "Preprint Info ONLY", headerSort: false, width: "fitData" },
-    { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false, width: "fitData" },
-    { title: "Invite tracker", field: "Invite tracker", headerSort: false, width: "fitData" },
-    { title: "Unchecked tracker", field: "Unchecked tracker", headerSort: false, width: "fitData" },
-    { title: "record id", field: "record id", headerSort: false, width: "fitData" },
-    { title: "Date of Quality Check", field: "Date of Quality Check", headerSort: false, width: "fitData" },
-    { title: "miniExtensions", field: "miniExtensions", headerSort: false, width: "fitData" }
+    { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false, width: "fitData" }
   ];
 
   const table = new Tabulator("#example-table", {
@@ -157,8 +145,8 @@ async function initializeTable() {
     groupBy: "Preprint ID (pulled)", // Group rows by Preprint ID
     groupStartOpen: false, // Start with groups collapsed
     groupHeader: function(value, count, data) {
-      // Display Preprint Title instead of Preprint ID in the group header
-      return data[0]["Preprint Title"] + "<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
+      // Display Preprint Title and Domain in the group header
+      return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
     },
     cellEdited: function(cell) {
       // Triggered when a cell is edited
@@ -185,6 +173,7 @@ async function initializeTable() {
 
 // Initialize the table on page load
 document.addEventListener("DOMContentLoaded", initializeTable);
+
 
 
 
