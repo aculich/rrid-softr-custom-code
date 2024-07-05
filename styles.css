@@ -44,3 +44,7 @@ h1 {
   font-weight: bold;
   font-size: 1.5rem;
 }
+#example-table {
+  overflow-x: auto; /* enables horizontal scrolling */
+  white-space: nowrap; /* prevents the table from wrapping onto multiple lines */
+}

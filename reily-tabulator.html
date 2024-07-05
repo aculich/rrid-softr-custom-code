@@ -4,15 +4,27 @@
     <!-- Include Tabulator CSS -->
     <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.0.8/dist/css/tabulator.min.css">
     <style>
+   
+      .tabulator {
+        height: 500px; /* Fixed height */
+        width: 100%;   /* Set width to 100% of container */
+        overflow-x: auto; /* Enable scrolling */
+        max-width: 3822px;
+      }
       .tabulator .tabulator-cell {
+       
         white-space: pre-wrap; /* Allow text to wrap */
       }
+      
     </style>
   </head>
   <body>
     <p>Editable Table</p>
     <div id="example-table"></div>
 
+    <!--Luxon library for sorting date-->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@2.0.2/build/global/luxon.min.js"></script>
+    
     <!-- Include Tabulator JS -->
     <script src="https://unpkg.com/tabulator-tables@5.0.8/dist/js/tabulator.min.js"></script>
     <script>
@@ -35,8 +47,15 @@
           }
           const data = await response.json();
           console.log('Data fetched:', data);
-          return data.records.map(record => ({
-            id: record.id,
+          return data.records.map(record => {
+            // Convert "Date of Proposal" to Date object
+            let dateOfProposal = record.fields["Date of Proposal"];
+            if (dateOfProposal) {
+                const dateObj = new Date(dateOfProposal);
+                dateOfProposal = dateObj.toISOString().split('T')[0]; // Format as "YYYY-MM-DD"
+            }
+            return {
+                id: record.id,
             "Preprint ID (pulled)": record.fields["Preprint ID (pulled)"],
             "Preprint Title": record.fields["Preprint Title"],
             "Domain": record.fields["Domain"],
@@ -64,12 +83,11 @@
             "DOI of Nearest Neighbors Paper": record.fields["DOI of Nearest Neighbors Paper"],
             "COI NOTICE": record.fields["COI NOTICE"],
             "Preprint Status (from Preprint Info ONLY)": record.fields["Preprint Status (from Preprint Info ONLY)"],
-            "USER ID": record.fields["USER ID"],
-            "Date of Proposal": record.fields["Date of Proposal"],
+            "Date of Proposal": dateOfProposal, // Use Date object
             "Flagged issues": record.fields["Flagged issues"],
             "Preprint Info ONLY": record.fields["Preprint Info ONLY"],
             "Rank (from Preprint Info ONLY)": record.fields["Rank (from Preprint Info ONLY)"]
-          }));
+          }});
         } catch (error) {
           console.error(error);
           return [];
@@ -97,8 +115,14 @@
         }
       }
 
-      // Function to initialize Tabulator table
-   // Function to initialize Tabulator table
+      
+//Function for customized filtering in the table
+function customMultiSelectFilter(headerValue, rowValue) {
+    if (!headerValue || headerValue.length === 0) {
+        return true; // No filter selected, show all
+    }
+    return headerValue.includes(rowValue);
+}
 // Function to initialize Tabulator table
 async function initializeTable() {
   const tableData = await fetchData();
@@ -107,7 +131,20 @@ async function initializeTable() {
   const columnDefs = [
     { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", headerSort: false, visible: false, width: "fitData" },
     { title: "Reviewer Email", field: "Reviewer Email", headerSort: false, width: "fitData" },
-    { title: "Status", field: "Status", editor: "select", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }, width: "fitData" },
+    {
+            title: "Status",
+            field: "Status",
+            editor: "select",
+            editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
+            headerFilter: "select",
+            headerFilterParams: {
+                values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
+                multiselect: true,
+                multiselectFilter: true,
+            },
+            headerFilterFunc: customMultiSelectFilter,
+            width: "fitData"
+        },
     { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", headerSort: false, editor: "input", width: "fitData" },
     { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData" },
     { title: "First Name (Proposed Reviewer)", field: "First Name (Proposed Reviewer)", headerSort: false, width: "fitData" },
@@ -129,19 +166,45 @@ async function initializeTable() {
     { title: "Recent Reviewer?", field: "Recent Reviewer?", headerSort: false, width: "fitData" },
     { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", headerSort: false, formatter: "link", width: "fitData" },
     { title: "COI NOTICE", field: "COI NOTICE", headerSort: false, width: "fitData" },
-    { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)", headerSort: false, width: "fitData" },
-    { title: "USER ID", field: "USER ID", headerSort: false, width: "fitData" },
-    { title: "Date of Proposal", field: "Date of Proposal", headerSort: false, editable: true, width: "fitData" },
+    {
+            title: "Preprint Status (from Preprint Info ONLY)",
+            field: "Preprint Status (from Preprint Info ONLY)",
+            headerSort: false,
+            headerFilter: "select",
+            headerFilterParams: {
+                values: ["ACTIVE", "ON HOLD", "DORMANT", "COMPLETE",],
+                multiselect: true,
+                multiselectFilter: true,
+            },
+            headerFilterFunc: customMultiSelectFilter,
+            width: "fitData"
+        },
+    { title: "Date of Proposal", field: "Date of Proposal", headerSort: true, sorter: "date", sorterParams: { format: "yyyy-MM-dd" }, width: "fitData" },
     { title: "Flagged issues", field: "Flagged issues", headerSort: false, width: "fitData" },
     { title: "Preprint Info ONLY", field: "Preprint Info ONLY", headerSort: false, width: "fitData" },
     { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false, width: "fitData" }
   ];
+  
 
   const table = new Tabulator("#example-table", {
     data: tableData, // Load row data into Tabulator
     columns: columnDefs, // Define table columns
     //layout: "fitDataStretch", // Fit columns to width of data and stretch to fit the table
     //movableColumns: true, // Allow column order to be changed
+
+    height: "100%",
+    rowHeight: 30,
+    layout: "fitDataTable",
+    groupBy: "Preprint ID (pulled)", // Group rows by Preprint ID
+    groupStartOpen: false, // Start with groups collapsed
+    groupSort: [{ column: "Date of Proposal", dir: "asc" }], // Sort rows within each group by Date of Proposal
+    initialSort: [
+        { column: "Date of Proposal", dir: "asc" } // Initial sort by Date of Proposal
+    ],
+    groupHeader: function(value, count, data) {
+      // Display Preprint Title and Domain in the group header
+      return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
+    },
     initialFilter: [
         // Use a custom function to filter by multiple status values
         {
@@ -153,27 +216,18 @@ async function initializeTable() {
             }
         }
     ],
-
-    height: "100%",
-    rowHeight: 30,
-    layout: "fitDataTable",
-    groupBy: "Preprint ID (pulled)", // Group rows by Preprint ID
-    groupStartOpen: false, // Start with groups collapsed
-    groupHeader: function(value, count, data) {
-      // Display Preprint Title and Domain in the group header
-      return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
-    },
-    cellEdited: function(cell) {
-      // Triggered when a cell is edited
+    
+    initialSort: [
+            { column: "Date of Proposal", dir: "asc" } // Sort by Date of Proposal in ascending order
+        ],
+    
+        cellEdited: function(cell) {
       const updatedData = cell.getData();
       const recordId = updatedData.id;
-
-      // Fields to update in Airtable
       const fields = {
         "Status": updatedData["Status"],
         "Quality Check Reviewer Comments": updatedData["Quality Check Reviewer Comments"],
       };
-
       updateRecord(recordId, fields)
         .then(updatedRecord => {
           console.log("Record updated successfully:", updatedRecord);
@@ -183,12 +237,12 @@ async function initializeTable() {
         });
     }
   });
+
+  
 }
 
 // Initialize the table on page load
 document.addEventListener("DOMContentLoaded", initializeTable);
-
-
 
 
          </script>
