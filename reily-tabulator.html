@@ -182,6 +182,7 @@
           console.error(error);
           return [];
         }
+   
       }
 
       // Function to update a record in Airtable
@@ -232,9 +233,14 @@ var rowPopupFormatter = function(row) {
     container = document.createElement("div"),
     contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
 
-    for (let key in data) {
+    
+      for (let key in data) {
         if (key !== 'id') {
-            contents += `<div><strong>${key}:</strong> ${data[key]}</div>`;
+            let value = data[key];
+            if (key === "Back up reviewer?") {
+                value = value ? "Yes" : "No";
+            }
+            contents += `<div><strong>${key}:</strong> ${value}</div>`;
         }
     }
 
@@ -278,6 +284,10 @@ var rowPopupFormatter = function(row) {
   //exit button
     document.getElementById("exit-button").onclick = function(){
       container.remove();
+      var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
+        if (previousHighlightedRow) {
+            previousHighlightedRow.style.backgroundColor = "";
+        }
     };
    
 };
@@ -292,6 +302,17 @@ function expandViewButtonFormatter(cell, formatterParams, onRendered) {
     button.style.borderRadius = "4px";
     button.style.cursor = "pointer";
     button.onclick = function() {
+
+        // Remove highlight from any previously selected row
+        var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
+        if (previousHighlightedRow) {
+            previousHighlightedRow.style.backgroundColor = "";
+        }
+
+        // Highlight the current row
+        var currentRowElement = cell.getRow().getElement();
+        currentRowElement.style.backgroundColor = "rgba(78, 189, 210, 0.5)";
+
         rowPopupFormatter(cell.getRow());
     };
     return button;
@@ -342,18 +363,19 @@ async function initializeTable() {
     { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", headerSort: false, formatter: "link", width: "fitData" },
     { title: "COI NOTICE", field: "COI NOTICE", headerSort: false, width: "fitData" },
     {
-            title: "Preprint Status (from Preprint Info ONLY)",
+            title: "Preprint Status",
             field: "Preprint Status (from Preprint Info ONLY)",
             headerSort: false,
-            headerFilter: "select",
+            headerFilter: "list",
             headerFilterParams: {
-                values: ["ACTIVE", "ON HOLD", "DORMANT", "COMPLETE",],
+                values: ["ACTIVE", "ON HOLD", "DORMANT", "COMPLETE"],
                 multiselect: true,
                 multiselectFilter: true,
             },
             headerFilterFunc: customMultiSelectFilter,
             width: "fitData"
         },
+        
     { title: "Date of Proposal", field: "Date of Proposal", headerSort: true, sorter: "date", sorterParams: { format: "yyyy-MM-dd" }, width: "fitData" },
     { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false, width: "fitData" }
    
@@ -386,8 +408,9 @@ async function initializeTable() {
     ],
     initialSort: [
         { column: "Date of Proposal", dir: "asc" } // Sort by Date of Proposal in ascending order
-    ],
+    ]
    
+    /*
     cellEdited: function(cell) {
         const updatedData = cell.getData();
         const recordId = updatedData.id;
@@ -404,8 +427,25 @@ async function initializeTable() {
                 console.error("Error updating record:", error);
             });
     }
+    */
 });
 
+table.on('cellEdited', (cell) => {
+        const updatedData = cell.getData();
+        const recordId = updatedData.id;
+        const fields = {
+            "Status": updatedData["Status"],
+            "Quality Check Reviewer Comments": updatedData["Quality Check Reviewer Comments"]
+        };
+        console.log(`Cell edited - Record ID: ${recordId}`, updatedData);
+        updateRecord(recordId, fields)
+            .then(updatedRecord => {
+                console.log("Record updated successfully:", updatedRecord);
+            })
+            .catch(error => {
+                console.error("Error updating record:", error);
+            });
+    })
 
   
 }
