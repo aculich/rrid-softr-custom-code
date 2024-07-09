@@ -230,15 +230,16 @@ var rowPopupFormatter = function(row) {
 
     var data = row.getData(),
     container = document.createElement("div"),
-    contents = "<strong style='font-size:1.2em;'>Row Details</strong><br/><ul style='padding:0; margin-top:10px; margin-bottom:0;'>";
+    contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
 
     for (let key in data) {
         if (key !== 'id') {
-            contents += `<li><strong>${key}:</strong> ${data[key]}</li>`;
+            contents += `<div><strong>${key}:</strong> ${data[key]}</div>`;
         }
     }
 
-    contents += "</ul>";
+    contents += "</div>";
+   
 
     // Add exit button
     var exitButton = document.createElement("button");
@@ -266,7 +267,9 @@ var rowPopupFormatter = function(row) {
     container.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1)";
     container.style.borderRadius = "4px";
     container.style.maxWidth = "600px";
-    container.style.maxHeight = "600px";
+    container.style.maxHeight = "80%"; // Set max height to 80% of the viewport
+    container.style.overflowY = "auto"; // Enable vertical scrolling
+   
     container.style.zIndex = "1000";
     container.id = "row-popup";
 
@@ -289,7 +292,6 @@ function expandViewButtonFormatter(cell, formatterParams, onRendered) {
     button.style.borderRadius = "4px";
     button.style.cursor = "pointer";
     button.onclick = function() {
-      
         rowPopupFormatter(cell.getRow());
     };
     return button;
