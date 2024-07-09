@@ -171,14 +171,11 @@
             "Student": record.fields["Student"],
             "Student Email": record.fields["Student Email"],
             "Email of Quality Checker": record.fields["Email of Quality Checker"],
-            "First + Last Name": record.fields["First + Last Name"],
             "Recent Reviewer?": record.fields["Recent Reviewer?"],
             "DOI of Nearest Neighbors Paper": record.fields["DOI of Nearest Neighbors Paper"],
             "COI NOTICE": record.fields["COI NOTICE"],
             "Preprint Status (from Preprint Info ONLY)": record.fields["Preprint Status (from Preprint Info ONLY)"],
             "Date of Proposal": dateOfProposal, // Use Date object
-            "Flagged issues": record.fields["Flagged issues"],
-            "Preprint Info ONLY": record.fields["Preprint Info ONLY"],
             "Rank (from Preprint Info ONLY)": record.fields["Rank (from Preprint Info ONLY)"]
           }});
         } catch (error) {
@@ -219,27 +216,108 @@ function customMultiSelectFilter(headerValue, rowValue) {
     }
     return headerValue.includes(rowValue);
 }
+
+
+    
+// Create row popup contents
+// Create row popup contents
+var rowPopupFormatter = function(row) {
+    // Remove any existing popups
+    const existingPopup = document.getElementById("row-popup");
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    var data = row.getData(),
+    container = document.createElement("div"),
+    contents = "<strong style='font-size:1.2em;'>Row Details</strong><br/><ul style='padding:0; margin-top:10px; margin-bottom:0;'>";
+
+    for (let key in data) {
+        if (key !== 'id') {
+            contents += `<li><strong>${key}:</strong> ${data[key]}</li>`;
+        }
+    }
+
+    contents += "</ul>";
+
+    // Add exit button
+    var exitButton = document.createElement("button");
+    exitButton.innerHTML = "X";
+    exitButton.style.position = "absolute";
+    exitButton.style.top = "10px";
+    exitButton.style.right = "10px";
+    exitButton.style.backgroundColor = "blue";
+    exitButton.style.color = "white";
+    exitButton.style.border = "none";
+    exitButton.style.borderRadius = "50%";
+    exitButton.style.cursor = "pointer";
+    exitButton.id = "exit-button";
+   
+
+    container.appendChild(exitButton);
+    container.innerHTML += contents;
+    container.style.position = "fixed";
+    container.style.top = "50%";
+    container.style.left = "50%";
+    container.style.transform = "translate(-50%, -50%)";
+    container.style.padding = "20px";
+    container.style.border = "1px solid #ddd";
+    container.style.backgroundColor = "#fff";
+    container.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1)";
+    container.style.borderRadius = "4px";
+    container.style.maxWidth = "600px";
+    container.style.maxHeight = "600px";
+    container.style.zIndex = "1000";
+    container.id = "row-popup";
+
+    document.body.appendChild(container);
+   
+  //exit button
+    document.getElementById("exit-button").onclick = function(){
+      container.remove();
+    };
+   
+};
+
+// Function to create the Expand View button
+function expandViewButtonFormatter(cell, formatterParams, onRendered) {
+    var button = document.createElement("button");
+    button.innerHTML = "Expand View";
+    button.style.backgroundColor = "#4ebdd2";
+    button.style.color = "white";
+    button.style.border = "none";
+    button.style.borderRadius = "4px";
+    button.style.cursor = "pointer";
+    button.onclick = function() {
+      
+        rowPopupFormatter(cell.getRow());
+    };
+    return button;
+}
+
 // Function to initialize Tabulator table
 async function initializeTable() {
   const tableData = await fetchData();
   console.log('Table data:', tableData);
 
   const columnDefs = [
+    { title: "Expand View", formatter: expandViewButtonFormatter, width: 100, headerSort: false },
     { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", headerSort: false, visible: false, width: "fitData" },
     { title: "Reviewer Email", field: "Reviewer Email", headerSort: false, width: "fitData" },
     {
             title: "Status",
             field: "Status",
-            editor: "select",
+            editor: "list",
             editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
-            headerFilter: "select",
+            headerFilter: "list",
             headerFilterParams: {
                 values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
                 multiselect: true,
                 multiselectFilter: true,
             },
             headerFilterFunc: customMultiSelectFilter,
-            width: "fitData"
+            width: "fitData",
+            headerSort: false
         },
     { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", headerSort: false, editor: "input", width: "fitData" },
     { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData" },
@@ -258,7 +336,6 @@ async function initializeTable() {
     { title: "Student", field: "Student", headerSort: false, width: "fitData" },
     { title: "Student Email", field: "Student Email", headerSort: false, width: "fitData" },
     { title: "Email of Quality Checker", field: "Email of Quality Checker", headerSort: false, width: "fitData" },
-    { title: "First + Last Name", field: "First + Last Name", headerSort: false, width: "fitData" },
     { title: "Recent Reviewer?", field: "Recent Reviewer?", headerSort: false, width: "fitData" },
     { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", headerSort: false, formatter: "link", width: "fitData" },
     { title: "COI NOTICE", field: "COI NOTICE", headerSort: false, width: "fitData" },
@@ -276,30 +353,24 @@ async function initializeTable() {
             width: "fitData"
         },
     { title: "Date of Proposal", field: "Date of Proposal", headerSort: true, sorter: "date", sorterParams: { format: "yyyy-MM-dd" }, width: "fitData" },
-    { title: "Flagged issues", field: "Flagged issues", headerSort: false, width: "fitData" },
-    { title: "Preprint Info ONLY", field: "Preprint Info ONLY", headerSort: false, width: "fitData" },
     { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false, width: "fitData" }
+   
   ];
   
 
   const table = new Tabulator("#example-table", {
     data: tableData, // Load row data into Tabulator
     columns: columnDefs, // Define table columns
-    //layout: "fitDataStretch", // Fit columns to width of data and stretch to fit the table
-    //movableColumns: true, // Allow column order to be changed
-    
     height: "100%",
-    rowHeight: 30,
     layout: "fitDataTable",
     groupBy: "Preprint ID (pulled)", // Group rows by Preprint ID
     groupStartOpen: false, // Start with groups collapsed
-    groupSort: [{ column: "Date of Proposal", dir: "asc" }], // Sort rows within each group by Date of Proposal
     initialSort: [
         { column: "Date of Proposal", dir: "asc" } // Initial sort by Date of Proposal
     ],
     groupHeader: function(value, count, data) {
-      // Display Preprint Title and Domain in the group header
-      return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
+        // Display Preprint Title and Domain in the group header
+        return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
     },
     initialFilter: [
         {
@@ -311,7 +382,10 @@ async function initializeTable() {
             }
         }
     ],
-    //rowClickPopup:"Im a Popup",
+    initialSort: [
+        { column: "Date of Proposal", dir: "asc" } // Sort by Date of Proposal in ascending order
+    ],
+   
     cellEdited: function(cell) {
         const updatedData = cell.getData();
         const recordId = updatedData.id;
@@ -327,11 +401,9 @@ async function initializeTable() {
             .catch(error => {
                 console.error("Error updating record:", error);
             });
-      }
-    
+    }
+});
 
-    
-  });
 
   
 }
