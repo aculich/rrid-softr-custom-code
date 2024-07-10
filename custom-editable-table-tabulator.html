@@ -12,7 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
     <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
     <script>
-        const airtableToken = 'patMYPsrw97yxUfyH.1c3e9172d251d9029d562a091759bab69d1e345aa74c31307118cdaf43ba3d60';
+        // const airtableToken = 'patMYPsrw97yxUfyH.1c3e9172d251d9029d562a091759bab69d1e345aa74c31307118cdaf43ba3d60';
+        const airtableToken = 'patC7gZRJIhFsGTnX.c9c88d1c2afe9a55e8db1b060c0dba155ec7274f37c6a5bbea30e54881f78657'; // Aaron's key with write permissions
         const baseId = 'appAYosfmfSuHWiBT';
         const tableId = 'tblHRiK0758oaO4jI';
 
@@ -27,6 +28,23 @@
                 delete fields["Preprint ID (pulled)"];
                 return { id: record.id, ...fields };
             });
+        }
+
+        async function updateAirtable(recordId, fieldName, currentValue) {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}`, 'Content-Type': 'application/json' };
+            const data = {
+                fields: {
+                    [fieldName]: currentValue
+                }
+            };
+
+            try {
+                await axios.patch(url, data, { headers });
+                console.log(`Updated record ${recordId}: ${fieldName} = ${currentValue}`);
+            } catch (error) {
+                console.error(`Error updating record ${recordId}:`, error);
+            }
         }
 
         fetchData().then(data => {
@@ -60,6 +78,7 @@
                     { column: "Status", dir: "asc" }
                 ]
             });
+
             table.on("cellEdited", function(cell) {
                 const row = cell.getRow();
                 const rowIndex = row.getPosition();
@@ -79,7 +98,10 @@
                 `;
 
                 console.log(logMessage);
-                alert(logMessage);
+                // alert(logMessage);
+
+                // Update Airtable with the new value
+                updateAirtable(recordId, fieldName, currentValue);
             });
         }).catch(error => {
             console.error('Error fetching data from Airtable:', error);
