@@ -12,7 +12,6 @@
     <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
     <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
     <script>
-        // const airtableToken = 'patMYPsrw97yxUfyH.1c3e9172d251d9029d562a091759bab69d1e345aa74c31307118cdaf43ba3d60';
         const airtableToken = 'patC7gZRJIhFsGTnX.c9c88d1c2afe9a55e8db1b060c0dba155ec7274f37c6a5bbea30e54881f78657'; // Aaron's key with write permissions
         const baseId = 'appAYosfmfSuHWiBT';
         const tableId = 'tblHRiK0758oaO4jI';
@@ -28,6 +27,16 @@
                 delete fields["Preprint ID (pulled)"];
                 return { id: record.id, ...fields };
             });
+        }
+
+        async function fetchRowData(recordId) {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}` };
+            const response = await axios.get(url, { headers });
+            const fields = response.data.fields;
+            fields.preprintId = fields["Preprint ID (pulled)"];
+            delete fields["Preprint ID (pulled)"];
+            return { id: response.data.id, ...fields };
         }
 
         async function updateAirtable(recordId, fieldName, currentValue) {
@@ -77,6 +86,45 @@
                 initialSort: [
                     { column: "Status", dir: "asc" }
                 ]
+            });
+
+            table.on("cellEditing", async function(cell) {
+                const row = cell.getRow();
+                const recordId = row.getData().id;
+
+                // Fetch the latest data for the row
+                const latestData = await fetchRowData(recordId);
+
+                // Compare the latest data with the current row data
+                let dataChanged = false;
+                const currentData = row.getData();
+                const columns = table.getColumnDefinitions();
+                
+                for (const column of columns) {
+                    const field = column.field;
+                    const editor = column.editor;
+
+                    // Only check fields that are editable
+                    if (editor && currentData[field] !== undefined) {
+                        const currentValue = currentData[field];
+                        const latestValue = latestData[field];
+                        
+                        if (typeof currentValue === 'object' || typeof latestValue === 'object') {
+                            if (JSON.stringify(currentValue) !== JSON.stringify(latestValue)) {
+                                dataChanged = true;
+                                console.log(`Data changed for field "${field}": current value = ${JSON.stringify(currentValue)}, latest value = ${JSON.stringify(latestValue)}`);
+                            }
+                        } else if (currentValue !== latestValue) {
+                            dataChanged = true;
+                            console.log(`Data changed for field "${field}": current value = ${currentValue}, latest value = ${latestValue}`);
+                        }
+                    }
+                }
+
+                // Update the row only if data has changed
+                if (dataChanged) {
+                    row.update(latestData);
+                }
             });
 
             table.on("cellEdited", function(cell) {
