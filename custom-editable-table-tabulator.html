@@ -1,61 +1,89 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <!-- Include Tabulator CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.0.8/dist/css/tabulator.min.css">
-  </head>
-  <body>
-    <p>Editable Table</p>
-    <div id="example-table"></div>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabulator with Airtable</title>
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css">
+</head>
+<body>
+    <div id="table"></div>
 
-    <!-- Include Tabulator JS -->
-    <script src="https://unpkg.com/tabulator-tables@5.0.8/dist/js/tabulator.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
     <script>
-      // Define the columns
-      const columnDefs = [
-        { title: "Preprint ID", field: "preprintId", headerSort: false, visible: false },
-        { title: "Preprint Title", field: "preprintTitle", headerSort: false },
-        { title: "Domain", field: "domain", headerSort: false },
-        { title: "Reviewer Email", field: "reviewerEmail", headerSort: false },
-        { 
-          title: "Status", 
-          field: "status", 
-          editor: "select", 
-          editorParams: { 
-            values: ["Unchecked", "Invite", "Invite Backup", "Reject", "Fixed"] 
-          } 
-        },
-        { title: "Quality Check Reviewer Comments", field: "qualityCheckReviewerComments", editor: "input" },
-        { title: "Student Reply Comments", field: "studentReplyComments", editor: "input" }
-      ];
+        const airtableToken = 'patMYPsrw97yxUfyH.1c3e9172d251d9029d562a091759bab69d1e345aa74c31307118cdaf43ba3d60';
+        const baseId = 'appAYosfmfSuHWiBT';
+        const tableId = 'tblHRiK0758oaO4jI';
 
-      // Define the data
-      const rowData = [
-        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "hey@gmail.com", status: "Reject", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "hi@gmail.com", status: "Invite", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "bog@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "rechg8nNitg6HXQtl", preprintTitle: "Day 3 parasitemia and PI...", domain: "Medical Sciences", reviewerEmail: "reily@gmail.com", status: "Invite Backup", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "reckblBrsoAetsXWF", preprintTitle: "Associations between SA...", domain: "Public Health", reviewerEmail: "live@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "reily@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "more@gmail.com", status: "Fixed", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "more@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" },
-        { preprintId: "recv5kJmyRTZuOUXT", preprintTitle: "Streptococcus pneumonia...", domain: "Public Health", reviewerEmail: "fin@gmail.com", status: "Unchecked", qualityCheckReviewerComments: "", studentReplyComments: "" }
-      ];
-
-      // Initialize Tabulator
-      const table = new Tabulator("#example-table", {
-        data: rowData, // Load row data into Tabulator
-        columns: columnDefs, // Define table columns
-        groupBy: "preprintId", // Group rows by Preprint ID
-        layout: "fitColumns", // Fit columns to width of table
-        movableColumns: true, // Allow column order to be changed
-        groupStartOpen: true, // Start with groups expanded
-        cellEdited: function(cell) {
-          // Triggered when cell is edited
-          console.log("Data after change is: ", cell.getData());
+        async function fetchData() {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}` };
+            const response = await axios.get(url, { headers });
+            return response.data.records.map(record => {
+                const fields = record.fields;
+                // Rename "Preprint ID (pulled)" to "preprintId"
+                fields.preprintId = fields["Preprint ID (pulled)"];
+                delete fields["Preprint ID (pulled)"];
+                return { id: record.id, ...fields };
+            });
         }
-      });
+
+        fetchData().then(data => {
+            const columns = Object.keys(data[0]).map(key => ({ title: key, field: key, editor: "input" }));
+
+            // Ensure preprintId is the first column with title "Preprint ID"
+            const specialColumns = [
+                { title: "Preprint ID", field: "preprintId", editor: "input" },
+                { title: "Status", field: "Status", editor: "input" },
+                { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input" },
+                { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input" }
+            ];
+
+            const reorderedColumns = specialColumns.concat(columns.filter(col => !specialColumns.find(special => special.field === col.field)));
+
+            const table = new Tabulator("#table", {
+                data: data,
+                columns: reorderedColumns,
+                groupBy: "preprintId", // Group rows by Preprint ID
+                layout: "fitDataTable", // Fit columns to width of table
+                movableColumns: true, // Allow column order to be changed
+                groupStartOpen: true, // Start with groups expanded
+                responsiveLayout: "hide",
+                tooltips: true,
+                addRowPos: "top",
+                history: true,
+                pagination: "local",
+                paginationSize: 100,
+                resizableRows: true,
+                initialSort: [
+                    { column: "Status", dir: "asc" }
+                ]
+            });
+            table.on("cellEdited", function(cell) {
+                const row = cell.getRow();
+                const rowIndex = row.getPosition();
+                const fieldName = cell.getColumn().getField();
+                const recordId = row.getData().id;
+                const preprintId = row.getData().preprintId;
+                const previousValue = cell.getOldValue();
+                const currentValue = cell.getValue();
+
+                const logMessage = `
+                    Cell edited at row ${rowIndex}
+                    Field Name: ${fieldName}
+                    Record Id: ${recordId}
+                    Preprint Id: ${preprintId}
+                    Previous value: ${previousValue}
+                    Current value: ${currentValue}
+                `;
+
+                console.log(logMessage);
+                alert(logMessage);
+            });
+        }).catch(error => {
+            console.error('Error fetching data from Airtable:', error);
+        });
     </script>
-  </body>
+</body>
 </html>

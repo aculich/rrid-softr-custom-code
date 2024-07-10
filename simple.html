@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabulator Hello World</title>
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css">
+</head>
+<body>
+    <div id="table"></div>
+
+    <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const table = new Tabulator("#table", {
+                data: [
+                    {id: 1, preprintId: "12345", Status: "Pending", "Quality Check Reviewer Comments": "Looks good", "Student Reply Comments": "N/A"},
+                    {id: 2, preprintId: "67890", Status: "Approved", "Quality Check Reviewer Comments": "Approved with comments", "Student Reply Comments": "N/A"}
+                ],
+                columns: [
+                    { title: "Preprint ID", field: "preprintId", editor: "input" },
+                    { title: "Status", field: "Status", editor: "input" },
+                    { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input" },
+                    { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input" }
+                ],
+                groupBy: "preprintId",
+                layout: "fitDataTable",
+                movableColumns: true,
+                groupStartOpen: true,
+                responsiveLayout: "hide",
+                tooltips: true,
+                addRowPos: "top",
+                history: true,
+                pagination: "local",
+                paginationSize: 100,
+                resizableRows: true,
+                initialSort: [
+                    { column: "Status", dir: "asc" }
+                ]
+            });
+
+            table.on("cellEdited", function(cell) {
+                const row = cell.getRow();
+                const rowIndex = row.getPosition();
+                const cellIndex = cell.getColumn().getField();
+                const identifier = row.getData().id;
+                const previousValue = cell.getOldValue();
+                const currentValue = cell.getValue();
+
+                const logMessage = `
+                    Cell edited at row ${rowIndex}, column ${cellIndex}\n
+                    Identifier: ${identifier}\n
+                    Previous value: ${previousValue}\n
+                    Current value: ${currentValue}
+                `;
+
+                console.log(logMessage);
+                alert(logMessage);
+            });
+        });
+    </script>
+</body>
+</html>
