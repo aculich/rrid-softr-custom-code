@@ -116,6 +116,15 @@
   </head>
   <body>
     <p>Editable Table</p>
+    <div id="filter-buttons" style="text-align: center; margin-bottom: 20px;">
+      <button class="filter-button" data-domain="Public Health" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Public Health</button>
+      <button class="filter-button" data-domain="Medical Sciences" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Medical Sciences</button>
+      <button class="filter-button" data-domain="Biological and Chemical Sciences" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Biological and Chemical Sciences</button>
+      <button class="filter-button" data-domain="Physical Sciences and Engineering" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Physical Sciences and Engineering</button>
+      <button class="filter-button" data-domain="Social Sciences and Humanities" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Social Sciences and Humanities</button>
+    </div>
+  
+  
     <div id="example-table"></div>
 
     
@@ -214,9 +223,23 @@ function customMultiSelectFilter(headerValue, rowValue) {
     if (!headerValue || headerValue.length === 0) {
         return true; // No filter selected, show all
     }
+    if (Array.isArray(rowValue)) {
+        return rowValue.some(val => headerValue.includes(val));
+    }
+  
     return headerValue.includes(rowValue);
 }
+//function for filtering at start of page
+function customFilter(data) {
+    // Log the data to check if the fields are correctly formatted
+    console.log(`Checking Status: ${data["Status"]} Preprint Status: ${data["Preprint Status (from Preprint Info ONLY)"]}`);
 
+    const status = data["Status"];
+    const preprintStatus = data["Preprint Status (from Preprint Info ONLY)"];
+
+    return (status === "Unchecked" || status === "Fixed" || status === "Double Check") &&
+           (preprintStatus === "ON HOLD" || preprintStatus === "ACTIVE");
+}
 
     
 // Create row popup contents
@@ -321,63 +344,63 @@ function expandViewButtonFormatter(cell, formatterParams, onRendered) {
 async function initializeTable() {
   const tableData = await fetchData();
   console.log('Table data:', tableData);
-
+      
   const columnDefs = [
     { title: "Expand View", formatter: expandViewButtonFormatter, width: 100, headerSort: false },
-    { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", headerSort: false, visible: false, width: "fitData" },
-    { title: "Reviewer Email", field: "Reviewer Email", headerSort: false, width: "fitData" },
+    { title: "Preprint ID (pulled)", field: "Preprint ID (pulled)", editor: "input", headerSort: false, visible: false, width: "fitData" },
+    { title: "Reviewer Email", field: "Reviewer Email", editor: "input", headerSort: false, width: "fitData" },
     {
-            title: "Status",
-            field: "Status",
-            editor: "list",
-            editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
-            headerFilter: "list",
-            headerFilterParams: {
-                values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
-                multiselect: true,
-                multiselectFilter: true,
-            },
-            headerFilterFunc: customMultiSelectFilter,
-            width: "fitData",
-            headerSort: false
+        title: "Status",
+        field: "Status",
+        editor: "list",
+        editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
+        headerFilter: "list",
+        headerFilterParams: {
+            values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
+            multiselect: true,
+            multiselectFilter: true,
         },
-    { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", headerSort: false, editor: "input", width: "fitData" },
-    { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData" },
-    { title: "First Name (Proposed Reviewer)", field: "First Name (Proposed Reviewer)", headerSort: false, width: "fitData" },
-    { title: "Last Name (Proposed Reviewer)", field: "Last Name (Proposed Reviewer)", headerSort: false, width: "fitData" },
-    { title: "Back up reviewer?", field: "Back up reviewer?", headerSort: false, formatter: "tickCross", width: "fitData" },
-    { title: "Invite Backup For...", field: "Invite Backup For...", headerSort: false, width: "fitData" },
-    { title: "Highest Degree", field: "Highest Degree", headerSort: false, width: "fitData" },
-    { title: "Title", field: "Title", headerSort: false, width: "fitData" },
-    { title: "Affiliation", field: "Affiliation", headerSort: false, width: "fitData" },
-    { title: "Justification for Invite", field: "Justification for Invite", headerSort: false, width: "fitData" },
-    { title: "Subdiscipline", field: "Subdiscipline", headerSort: false, width: "fitData" },
-    { title: "Link to Profile", field: "Link to Profile", headerSort: false, formatter: "link", width: "fitData" },
-    { title: "Link to Publications", field: "Link to Publications", headerSort: false, formatter: "link", width: "fitData" },
-    { title: "Justification if not institutional email", field: "Justification if not institutional email", headerSort: false, width: "fitData" },
-    { title: "Student", field: "Student", headerSort: false, width: "fitData" },
-    { title: "Student Email", field: "Student Email", headerSort: false, width: "fitData" },
-    { title: "Email of Quality Checker", field: "Email of Quality Checker", headerSort: false, width: "fitData" },
-    { title: "Recent Reviewer?", field: "Recent Reviewer?", headerSort: false, width: "fitData" },
-    { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", headerSort: false, formatter: "link", width: "fitData" },
-    { title: "COI NOTICE", field: "COI NOTICE", headerSort: false, width: "fitData" },
+        headerFilterFunc: customMultiSelectFilter,
+        width: "fitData",
+        headerSort: false
+    },
+    { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Student Reply Comments", field: "Student Reply Comments", editor: "input", headerSort: false, width: "fitData" },
+    { title: "First Name (Proposed Reviewer)", field: "First Name (Proposed Reviewer)", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Last Name (Proposed Reviewer)", field: "Last Name (Proposed Reviewer)", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Back up reviewer?", field: "Back up reviewer?", editor: "tickCross", headerSort: false, formatter: "tickCross", width: "fitData" },
+    { title: "Invite Backup For...", field: "Invite Backup For...", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Highest Degree", field: "Highest Degree", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Title", field: "Title", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Affiliation", field: "Affiliation", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Justification for Invite", field: "Justification for Invite", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Subdiscipline", field: "Subdiscipline", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Link to Profile", field: "Link to Profile", editor: "input", headerSort: false, formatter: "link", width: "fitData" },
+    { title: "Link to Publications", field: "Link to Publications", editor: "input", headerSort: false, formatter: "link", width: "fitData" },
+    { title: "Justification if not institutional email", field: "Justification if not institutional email", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Student", field: "Student", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Student Email", field: "Student Email", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Email of Quality Checker", field: "Email of Quality Checker", editor: "input", headerSort: false, width: "fitData" },
+    { title: "Recent Reviewer?", field: "Recent Reviewer?", editor: "tickCross", headerSort: false, width: "fitData" },
+    { title: "DOI of Nearest Neighbors Paper", field: "DOI of Nearest Neighbors Paper", editor: "input", headerSort: false, formatter: "link", width: "fitData" },
+    { title: "COI NOTICE", field: "COI NOTICE", editor: "input", headerSort: false, width: "fitData" },
     {
-            title: "Preprint Status",
-            field: "Preprint Status (from Preprint Info ONLY)",
-            headerSort: false,
-            headerFilter: "list",
-            headerFilterParams: {
-                values: ["ACTIVE", "ON HOLD", "DORMANT", "COMPLETE"],
-                multiselect: true,
-                multiselectFilter: true,
-            },
-            headerFilterFunc: customMultiSelectFilter,
-            width: "fitData"
+        title: "Preprint Status",
+        field: "Preprint Status (from Preprint Info ONLY)",
+        headerSort: false,
+        editor: "list",
+        editorParams: { values: ["ACTIVE", "ON HOLD", "DORMANT", "COMPLETE"] },
+        headerFilter: "list",
+        headerFilterParams: {
+            values: ["ACTIVE", "ON HOLD", "DORMANT", "COMPLETE"],
+            multiselect: true,
+            multiselectFilter: true,
         },
-        
-    { title: "Date of Proposal", field: "Date of Proposal", headerSort: true, sorter: "date", sorterParams: { format: "yyyy-MM-dd" }, width: "fitData" },
-    { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", headerSort: false, width: "fitData" }
-   
+        headerFilterFunc: customMultiSelectFilter,
+        width: "fitData"
+    },
+    { title: "Date of Proposal", field: "Date of Proposal", editor: "input", headerSort: true, sorter: "date", sorterParams: { format: "yyyy-MM-dd" }, width: "fitData" },
+    { title: "Rank (from Preprint Info ONLY)", field: "Rank (from Preprint Info ONLY)", editor: "input", headerSort: false, width: "fitData" }
   ];
   
 
@@ -395,39 +418,56 @@ async function initializeTable() {
         // Display Preprint Title and Domain in the group header
         return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
     },
+    /*
     initialFilter: [
-        {
-            field: "Status",
-            type: "function",
-            value: function(cellValue, rowData) {
-                return (cellValue === "Unchecked" || cellValue === "Fixed" || cellValue === "Double Check") &&
-                       (rowData["Preprint Status (from Preprint Info ONLY)"] === "ON HOLD" || rowData["Preprint Status (from Preprint Info ONLY)"] === "ACTIVE");
-            }
+    {
+        field: "Status",
+        type: "function",
+        value: function(cellValue, rowData) {
+            const validStatus = ["Unchecked", "Fixed", "Double Check"];
+            const validPreprintStatus = ["ON HOLD", "ACTIVE"];
+            console.log("Filtering - Status:", cellValue, "Preprint Status:", rowData["Preprint Status (from Preprint Info ONLY)"]);
+            return validStatus.includes(cellValue) && validPreprintStatus.includes(rowData["Preprint Status (from Preprint Info ONLY)"]);
         }
+      }
     ],
+    */
     initialSort: [
         { column: "Date of Proposal", dir: "asc" } // Sort by Date of Proposal in ascending order
     ]
    
-    /*
-    cellEdited: function(cell) {
-        const updatedData = cell.getData();
-        const recordId = updatedData.id;
-        const fields = {
-            "Status": updatedData["Status"],
-            "Quality Check Reviewer Comments": updatedData["Quality Check Reviewer Comments"]
-        };
-        console.log(`Cell edited - Record ID: ${recordId}`, updatedData);
-        updateRecord(recordId, fields)
-            .then(updatedRecord => {
-                console.log("Record updated successfully:", updatedRecord);
-            })
-            .catch(error => {
-                console.error("Error updating record:", error);
-            });
-    }
-    */
+    
 });
+
+// Add event listeners to filter buttons
+document.querySelectorAll('.filter-button').forEach(button => {
+    button.addEventListener('click', function() {
+        if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
+            this.style.backgroundColor = 'white'; // deselect
+            this.style.color = '#4ebdd2';
+            this.style.border = '2px solid #4ebdd2';
+        } else {
+            this.style.backgroundColor = '#4ebdd2'; // select
+            this.style.color = 'white';
+            this.style.border = 'none';
+        }
+        updateTableFilter();
+    });
+});
+
+// Function to update the table filter based on selected buttons
+function updateTableFilter() {
+    const selectedDomains = Array.from(document.querySelectorAll('.filter-button'))
+                                .filter(button => button.style.backgroundColor === 'rgb(78, 189, 210)')
+                                .map(button => button.getAttribute('data-domain'));
+
+    if (selectedDomains.length > 0) {
+        table.setFilter("Domain", "in", selectedDomains);
+    } else {
+        table.clearFilter();
+    }
+}
+
 
 table.on('cellEdited', (cell) => {
         const updatedData = cell.getData();
@@ -445,8 +485,11 @@ table.on('cellEdited', (cell) => {
                 console.error("Error updating record:", error);
             });
     })
-
-  
+/*
+    table.on("tableBuilt", function() {
+      table.setFilter(customFilter);
+    });
+   */
 }
 
 // Initialize the table on page load

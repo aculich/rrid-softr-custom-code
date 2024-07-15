@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css">
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@2.0.2/build/global/luxon.min.js"></script>
+    <style>
+        body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .tabulator {
+      height: 500px; /* Fixed height */
+      width: 100%;   /* Set width to 100% of container */
+      max-width: 100%;
+      margin: 0 auto; /* Center the table */
+      border: 1px solid #ddd; /* Less prominent border */
+      border-radius: 4px;
+      background: #fff;
+      overflow-x: auto; /* Enable horizontal scrolling */
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Add shadow */
+      transition: all 0.3s ease; /* Smooth transitions */
+    }
+    
+    .tabulator .tabulator-header {
+      background-color: #191d4bff; /* Dark blue header background */
+      color: white; /* Header text color */
+      font-weight: bold;
+    }
+    
+    .tabulator .tabulator-header .tabulator-col {
+      background-color: #191d4bff; /* Dark blue column header background */
+      color: white; /* Column header text color */
+    }
+    
+    .tabulator .tabulator-cell {
+      white-space: pre-wrap; /* Allow text to wrap */
+      border: 1px solid #ddd;
+      padding: 10px;
+      transition: background-color 0.3s ease; /* Smooth transitions */
+    }
+    
+    .tabulator .tabulator-row {
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .tabulator .tabulator-row:nth-child(even) {
+      background-color: rgba(78, 189, 210, 0.2); /* Less opaque color */
+    }
+    
+    .tabulator .tabulator-row:nth-child(odd) {
+      background-color: #ffffff; /* Alternate row color */
+    }
+    
+    .tabulator .tabulator-row:hover {
+      background-color: #e9ecef; /* Hover effect */
+    }
+
+    .tabulator .tabulator-row .tabulator-cell input {
+      border: none;
+      padding: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      background-color: #ffffff; /* white input background */
+      color: #191d4bff; /* dark blue text color */
+    }
+
+    .tabulator .tabulator-row .tabulator-cell select {
+      border: none;
+      padding: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      background-color: #ffffff; /* white select background */
+      color: #191d4bff; /* dark blue text color */
+    }
+
+    .tabulator .tabulator-row .tabulator-cell textarea {
+      border: none;
+      padding: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      background-color: #ffffff; /* white textarea background */
+      color: #191d4bff; /* dark blue text color */
+    }
+    </style>
+</head>
+<body>
+    <div id="filter-buttons-domain" style="text-align: center; margin-bottom: 5px;">
+        <button class="filter-button-domain" data-domain="PH" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Public Health</button>
+        <button class="filter-button-domain" data-domain="MedSci" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Medical Sciences</button>
+        <button class="filter-button-domain" data-domain="BCS" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Biological and Chemical Sciences</button>
+        <button class="filter-button-domain" data-domain="PSE" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Physical Sciences and Engineering</button>
+        <button class="filter-button-domain" data-domain="SSH" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Social Sciences and Humanities</button>
+    </div>
+    <div style="text-align: center; margin-bottom: 10px;">
+        <small>Domain</small>
+    </div>
+    <div id="filter-buttons-preprint-status" style="text-align: center; margin-bottom: 5px;">
+        <button class="filter-button-preprint-status" data-status="ON HOLD" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ON HOLD</button>
+        <button class="filter-button-preprint-status" data-status="ACTIVE" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ACTIVE</button>
+        <button class="filter-button-preprint-status" data-status="ARCHIVED" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ARCHIVED</button>
+    </div>
+    <div style="text-align: center; margin-bottom: 10px;">
+        <small>Preprint Status</small>
+    </div>
+    
+    <div id="example-table"></div>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+    <script>
+        const airtableToken = 'patxvMWE66lCprz7O.5ff60f4f628a145176a5c5badf898a8d495ae2f704b0895b2cf2d50fffca5c27';
+        const baseId = 'appAYosfmfSuHWiBT';
+        const tableId = 'tblHRiK0758oaO4jI';
+        let table; // Define table variable here
+
+        async function fetchData() {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}` };
+            const response = await axios.get(url, { headers });
+            return response.data.records.map(record => {
+                const fields = record.fields;
+                fields.preprintId = fields["Preprint ID (pulled)"];
+                delete fields["Preprint ID (pulled)"];
+                return { id: record.id, ...fields };
+            });
+        }
+
+        async function fetchRowData(recordId) {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}` };
+            const response = await axios.get(url, { headers });
+            const fields = response.data.fields;
+            fields.preprintId = fields["Preprint ID (pulled)"];
+            delete fields["Preprint ID (pulled)"];
+            return { id: response.data.id, ...fields };
+        }
+
+        async function updateAirtable(recordId, fieldName, currentValue) {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}`, 'Content-Type': 'application/json' };
+            const data = {
+                fields: {
+                    [fieldName]: currentValue
+                }
+            };
+
+            try {
+                await axios.patch(url, data, { headers });
+                console.log(`Updated record ${recordId}: ${fieldName} = ${currentValue}`);
+            } catch (error) {
+                console.error(`Error updating record ${recordId}:`, error);
+            }
+        }
+
+        function customMultiSelectFilter(headerValue, rowValue) {
+            if (!headerValue || headerValue.length === 0) {
+                return true;
+            }
+            if (Array.isArray(rowValue)) {
+                return rowValue.some(val => headerValue.includes(val));
+            }
+            return headerValue.includes(rowValue);
+        }
+
+        function customFilter(data) {
+            const status = data["Status"];
+            const preprintStatus = data["Preprint Status (from Preprint Info ONLY)"];
+            return (status === "Unchecked" || status === "Fixed" || status === "Double Check") &&
+                   (preprintStatus === "ON HOLD" || preprintStatus === "ACTIVE");
+        }
+
+        function rowPopupFormatter(row) {
+            const existingPopup = document.getElementById("row-popup");
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+
+            var data = row.getData(),
+                container = document.createElement("div"),
+                contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
+
+            for (let key in data) {
+                if (key !== 'id') {
+                    let value = data[key];
+                    if (key === "Back up reviewer?") {
+                        value = value ? "Yes" : "No";
+                    }
+                    contents += `<div><strong>${key}:</strong> ${value}</div>`;
+                }
+            }
+
+            contents += "</div>";
+
+            var exitButton = document.createElement("button");
+            exitButton.innerHTML = "X";
+            exitButton.style.position = "absolute";
+            exitButton.style.top = "10px";
+            exitButton.style.right = "10px";
+            exitButton.style.backgroundColor = "blue";
+            exitButton.style.color = "white";
+            exitButton.style.border = "none";
+            exitButton.style.borderRadius = "50%";
+            exitButton.style.cursor = "pointer";
+            exitButton.id = "exit-button";
+
+            container.appendChild(exitButton);
+            container.innerHTML += contents;
+            container.style.position = "fixed";
+            container.style.top = "50%";
+            container.style.left = "50%";
+            container.style.transform = "translate(-50%, -50%)";
+            container.style.padding = "20px";
+            container.style.border = "1px solid #ddd";
+            container.style.backgroundColor = "#fff";
+            container.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1)";
+            container.style.borderRadius = "4px";
+            container.style.maxWidth = "600px";
+            container.style.maxHeight = "80%";
+            container.style.overflowY = "auto";
+            container.style.zIndex = "1000";
+            container.id = "row-popup";
+
+            document.body.appendChild(container);
+
+            document.getElementById("exit-button").onclick = function() {
+                container.remove();
+                var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
+                if (previousHighlightedRow) {
+                    previousHighlightedRow.style.backgroundColor = "";
+                }
+            };
+        }
+
+        function expandViewButtonFormatter(cell, formatterParams, onRendered) {
+            var button = document.createElement("button");
+            button.innerHTML = "Expand View";
+            button.style.backgroundColor = "#4ebdd2";
+            button.style.color = "white";
+            button.style.border = "none";
+            button.style.borderRadius = "4px";
+            button.style.cursor = "pointer";
+            button.onclick = function() {
+                var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
+                if (previousHighlightedRow) {
+                    previousHighlightedRow.style.backgroundColor = "";
+                }
+                var currentRowElement = cell.getRow().getElement();
+                currentRowElement.style.backgroundColor = "rgba(78, 189, 210, 0.5)";
+                rowPopupFormatter(cell.getRow());
+            };
+            return button;
+        }
+
+        fetchData().then(data => {
+            //const columns = Object.keys(data[0]).map(key => ({ title: key, field: key }));
+            const columns = Object.keys(data[0])
+                .filter(key => key !== 'id' && key !== 'Preprint Title' && key !== 'Domain' && key !== 'recordid' && key !== 'preprintId')
+                .map(key => ({ title: key, field: key }));
+
+            const specialColumns = [
+                { title: "Expand View", field: "expandView", formatter: expandViewButtonFormatter, width: 100, headerSort: false },
+                {
+                    title: "Status",
+                    field: "Status",
+                    editor: "list",
+                    editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
+                    headerFilter: "list",
+                    headerFilterParams: {
+                        values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
+                        multiselect: true,
+                        multiselectFilter: true,
+                    },
+                    headerFilterFunc: customMultiSelectFilter,
+                    width: "fitData",
+                    headerSort: false
+                },
+                { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
+                { title: "Student Reply Comments", field: "Student Reply Comments" }
+            ];
+
+            // Filter out special columns from the original columns array
+            const filteredColumns = columns.filter(col => !specialColumns.find(special => special.field === col.field));
+
+            // Combine specialColumns and the rest of the columns
+            const reorderedColumns = specialColumns.concat(filteredColumns);
+
+            // Make all fields editable except the "Status" column which has specific settings
+            const editableColumns = reorderedColumns.map(col => {
+                if (col.field !== "Status") {
+                    return { ...col, editor: "input", headerSort: false, width: "fitData" };
+                }
+                return col;
+            });
+
+            table = new Tabulator("#example-table", {
+                data: data, // Load row data into Tabulator
+                columns: editableColumns, // Define table columns
+                height: "100%",
+                layout: "fitDataTable",
+                groupBy: "preprintId", // Group rows by Preprint ID
+                groupStartOpen: false, // Start with groups collapsed
+                //layout: "fitColumns",
+                //responsiveLayout: "collapse",
+                /*
+                data: data,
+                columns: editableColumns,
+                groupBy: "preprintId",
+                layout: "fitDataTable",
+                movableColumns: true,
+                groupStartOpen: false,
+                responsiveLayout: "hide",
+                tooltips: true,
+                addRowPos: "top",
+                history: true,
+                pagination: "local",
+                paginationSize: 100,
+                resizableRows: true,
+                */
+                initialSort: [
+                    { column: "Date of Proposal", dir: "asc" }
+                ],
+                groupHeader: function(value, count, data) {
+                    return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
+                }
+            });
+
+            table.on("cellEditing", async function(cell) {
+                const row = cell.getRow();
+                const recordId = row.getData().id;
+                const latestData = await fetchRowData(recordId);
+                let dataChanged = false;
+                const currentData = row.getData();
+                const columns = table.getColumnDefinitions();
+                
+                for (const column of columns) {
+                    const field = column.field;
+                    const editor = column.editor;
+                    if (editor && currentData[field] !== undefined) {
+                        const currentValue = currentData[field];
+                        const latestValue = latestData[field];
+                        if (typeof currentValue === 'object' || typeof latestValue === 'object') {
+                            if (JSON.stringify(currentValue) !== JSON.stringify(latestValue)) {
+                                dataChanged = true;
+                                console.log(`Data changed for field "${field}": current value = ${JSON.stringify(currentValue)}, latest value = ${JSON.stringify(latestValue)}`);
+                            }
+                        } else if (currentValue !== latestValue) {
+                            dataChanged = true;
+                            console.log(`Data changed for field "${field}": current value = ${currentValue}, latest value = ${latestValue}`);
+                        }
+                    }
+                }
+                if (dataChanged) {
+                    row.update(latestData);
+                }
+            });
+
+            table.on("cellEdited", function(cell) {
+                const row = cell.getRow();
+                const rowIndex = row.getPosition();
+                const fieldName = cell.getColumn().getField();
+                const recordId = row.getData().id;
+                const preprintId = row.getData().preprintId;
+                const previousValue = cell.getOldValue();
+                const currentValue = cell.getValue();
+                const logMessage = `
+                    Cell edited at row ${rowIndex}
+                    Field Name: ${fieldName}
+                    Record Id: ${recordId}
+                    Preprint Id: ${preprintId}
+                    Previous value: ${previousValue}
+                    Current value: ${currentValue}
+                `;
+                console.log(logMessage);
+                updateAirtable(recordId, fieldName, currentValue);
+            });
+        }).catch(error => {
+            console.error('Error fetching data from Airtable:', error);
+        });
+
+        
+// Add event listeners to filter buttons
+document.querySelectorAll('.filter-button-domain').forEach(button => {
+    button.addEventListener('click', function() {
+        if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
+            this.style.backgroundColor = 'white'; // deselect
+            this.style.color = '#4ebdd2';
+            this.style.border = '2px solid #4ebdd2';
+        } else {
+            this.style.backgroundColor = '#4ebdd2'; // select
+            this.style.color = 'white';
+            this.style.border = 'none';
+        }
+        updateTableFilter();
+    });
+});
+
+document.querySelectorAll('.filter-button-preprint-status').forEach(button => {
+    button.addEventListener('click', function() {
+        if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
+            this.style.backgroundColor = 'white'; // deselect
+            this.style.color = '#4ebdd2';
+            this.style.border = '2px solid #4ebdd2';
+        } else {
+            this.style.backgroundColor = '#4ebdd2'; // select
+            this.style.color = 'white';
+            this.style.border = 'none';
+        }
+        updateTableFilter();
+    });
+});
+
+// Function to update the table filter based on selected buttons
+function updateTableFilter() {
+    const selectedDomains = Array.from(document.querySelectorAll('.filter-button-domain'))
+                                .filter(button => button.style.backgroundColor === 'rgb(78, 189, 210)')
+                                .map(button => button.getAttribute('data-domain'));
+
+    const selectedPreprintStatuses = Array.from(document.querySelectorAll('.filter-button-preprint-status'))
+                                .filter(button => button.style.backgroundColor === 'rgb(78, 189, 210)')
+                                .map(button => button.getAttribute('data-status'));
+
+    table.clearFilter(true); // clear existing filters but retain header filters
+
+    if (selectedDomains.length > 0) {
+        table.addFilter("Domain", "in", selectedDomains);
+    }
+
+    if (selectedPreprintStatuses.length > 0) {
+        table.addFilter(function(data) {
+            const preprintStatus = data["Preprint Status (from Preprint Info ONLY)"];
+            if (Array.isArray(preprintStatus)) {
+                return preprintStatus.some(status => selectedPreprintStatuses.includes(status));
+            }
+            return selectedPreprintStatuses.includes(preprintStatus);
+        });
+    }
+}
+
+
+    </script>
+</body>
+</html>
