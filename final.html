@@ -93,6 +93,9 @@
     </style>
 </head>
 <body>
+    <div style="text-align: center; margin-bottom: 10px;">
+        <small>Domain</small>
+    </div>
     <div id="filter-buttons-domain" style="text-align: center; margin-bottom: 5px;">
         <button class="filter-button-domain" data-domain="PH" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Public Health</button>
         <button class="filter-button-domain" data-domain="MedSci" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Medical Sciences</button>
@@ -101,16 +104,14 @@
         <button class="filter-button-domain" data-domain="SSH" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Social Sciences and Humanities</button>
     </div>
     <div style="text-align: center; margin-bottom: 10px;">
-        <small>Domain</small>
+        <small>Preprint Status</small>
     </div>
     <div id="filter-buttons-preprint-status" style="text-align: center; margin-bottom: 5px;">
         <button class="filter-button-preprint-status" data-status="ON HOLD" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ON HOLD</button>
         <button class="filter-button-preprint-status" data-status="ACTIVE" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ACTIVE</button>
-        <button class="filter-button-preprint-status" data-status="DORMANT" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ARCHIVED</button>
+        <button class="filter-button-preprint-status" data-status="COMPLETE" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">COMPLETE</button>
     </div>
-    <div style="text-align: center; margin-bottom: 10px;">
-        <small>Preprint Status</small>
-    </div>
+    
     
     <div id="example-table"></div>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
@@ -190,23 +191,54 @@
                 existingPopup.remove();
             }
 
-            var data = row.getData(),
-                container = document.createElement("div"),
-                contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
+            const data = row.getData();
+            const container = document.createElement("div");
+            let contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
 
-            for (let key in data) {
-                if (key !== 'id') {
+            const columnDefs = [
+                { title: "Preprint Title", field: "Preprint Title" },
+                { title: "Domain", field: "Domain" },
+                //{ title: "Expand View", field: "expandView", formatter: expandViewButtonFormatter, width: 100, headerSort: false, width: "fitData" },
+                { title: "Status", field: "Status", editor: "list", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }, headerFilter: "list", headerFilterParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"], multiselect: true, multiselectFilter: true }, headerFilterFunc: customMultiSelectFilter, width: "fitData", headerSort: false },
+                { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
+                { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData" },
+                { title: "Reviewer Name", field: "First + Last Name" },
+                { title: "Reviewer Email", field: "Reviewer Email" },
+                { title: "Backup Reviewer?", field: "Backup Reviewer?" },
+                { title: "Invite Backup For...", field: "Invite Backup For..." },
+                { title: "Affiliation", field: "Affiliation" },
+                { title: "Secondary Affiliation", field: "Secondary Affiliation" },
+                { title: "Highest Degree", field: "Highest Degree" },
+                { title: "Other Degree", field: "Other Degree" },
+                { title: "Title", field: "Title" },
+                { title: "Link to Profile", field: "Link to Profile" },
+                { title: "Justification for Non-Institutional Profile", field: "Justification for Non-Institutional Profile" },
+                { title: "Subdiscipline", field: "Subdiscipline" },
+                { title: "Link to Publications", field: "Link to Publications" },
+                { title: "DOI of Best Match Paper", field: "DOI of Best Match Paper" },
+                { title: "Justification for Invite", field: "Justification for Invite" },
+                { title: "Student", field: "Student" },
+                { title: "Student Email", field: "Student Email" },
+                { title: "Email of Quality Checker", field: "Email of Quality Checker" },
+                { title: "Date of Proposal", field: "Date of Proposal" },
+                { title: "Date of Quality Check", field: "Date of Quality Check" },
+                { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)" }
+            ];
+
+            columnDefs.forEach(column => {
+                const key = column.field;
+                if (key && data[key] !== undefined) {
                     let value = data[key];
                     if (key === "Back up reviewer?") {
                         value = value ? "Yes" : "No";
                     }
-                    contents += `<div><strong>${key}:</strong> ${value}</div>`;
+                    contents += `<div><strong>${column.title}:</strong> ${value}</div>`;
                 }
-            }
+            });
 
             contents += "</div>";
 
-            var exitButton = document.createElement("button");
+            const exitButton = document.createElement("button");
             exitButton.innerHTML = "X";
             exitButton.style.position = "absolute";
             exitButton.style.top = "10px";
@@ -245,6 +277,7 @@
                 }
             };
         }
+
 
         function expandViewButtonFormatter(cell, formatterParams, onRendered) {
             var button = document.createElement("button");
@@ -292,29 +325,65 @@
                     headerSort: false
                 },
                 { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
-                { title: "Student Reply Comments", field: "Student Reply Comments" },
-                { title: "Reviewer Email", field: "Reviewer Email" },
+                { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData"  },
                 { title: "Reviewer Name", field: "First + Last Name" },
+                { title: "Reviewer Email", field: "Reviewer Email" },
                 { title: "Backup Reviewer?", field: "Backup Reviewer?" },
                 { title: "Invite Backup For...", field: "Invite Backup For..." },
+                { title: "Affiliation", field: "Affiliation" },
+                { title: "Secondary Affiliation", field: "Secondary Affiliation" },
                 { title: "Highest Degree", field: "Highest Degree" },
+                { title: "Other Degree", field: "Other Degree" },
                 { title: "Title", field: "Title" },
-                { title: "Affiliation", field: "Justification" },
+                { 
+                    title: "Link to Profile", 
+                    field: "Link to Profile",
+                    
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        var url = value.startsWith("https") ? value : `http://${value}`; //MAY HAVE TO ADD OTHER REDIRECTS BESIDES HTTPS
+                        return `<a href="${url}" target="_blank">${url}</a>`;
+                    } 
+                },
+                { title: "Justification for Non-Institutional Profile", field: "Justification for Non-Institutional Profile" },
                 { title: "Subdiscipline", field: "Subdiscipline" },
+                { 
+                    title: "Link to Publications", 
+                    field: "Link to Publications",
+                    
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        var url = value.startsWith("https") ? value : `http://${value}`; //MAY HAVE TO ADD OTHER REDIRECTS BESIDES HTTPS
+                        return `<a href="${url}" target="_blank">${url}</a>`;
+                    } 
+                },
+                { 
+                    title: "DOI of Best Match Paper", 
+                    field: "DOI of Best Match Paper", 
+                
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        var url = value.startsWith("https") ? value : `http://${value}`;
+                        return `<a href="${url}" target="_blank">${url}</a>`;
+                    } 
+                },
                 { title: "Justification for Invite", field: "Justification for Invite" },
-                { title: "Link to Profile", field: "Link to Profile" },
-                { title: "Justification if Profile URL Wrong", field: "Justification if Profile URL Wrong" },
-                { title: "DOI of Best Match Paper", field: "DOI of Best Match Paper" },
                 { title: "Student", field: "Student" },
                 { title: "Student Email", field: "Student Email" },
-                { title: "Date of Reviewer Proposal", field: "Date of Proposal" },
-            
+                { title: "Email of Quality Checker", field: "Email of Quality Checker" },
+                { title: "Date of Proposal", field: "Date of Proposal" },
+                { title: "Date of Quality Check", field: "Date of Quality Check" },
+                { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)" },
+
+               
             ];
-        // Calculate total width of all columns
+            
+            // Calculate total width of all columns
         const totalWidth = columns.reduce((sum, column) => sum + (column.width || 150), 0); // Assuming a default width of 150 if not specified
         console.log("width: " + totalWidth);
-         // Set the width of the table container
+    // Set the width of the table container
          document.getElementById('example-table').style.width = `${totalWidth}px`;
+
             // Filter out special columns from the original columns array
             //const filteredColumns = columns.filter(col => !specialColumns.find(special => special.field === col.field));
 
@@ -323,7 +392,7 @@
 
             // Make all fields editable except the "Status" column which has specific settings
             const editableColumns = columns.map(col => {
-                if (col.field !== "Status" && col.field !== "expandView") {
+                if (col.field !== "Status" && col.field !== "expandView" && col.field !== "Student Reply Comments") {
                     return { ...col, editor: "input", headerSort: false, width: "fitData" };
                 }
                 return col;
@@ -343,6 +412,8 @@
                 groupHeader: function(value, count, data) {
                     return data[0]["Preprint Title"] + " (" + data[0]["Domain"] + ")<span style='color:#d00; margin-left:10px;'>(" + count + " items)</span>";
                 }
+                
+               
             });
 
             table.on("cellEditing", async function(cell) {
