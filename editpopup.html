@@ -222,10 +222,9 @@
             const columnDefs = [
                 { title: "Preprint Title", field: "Preprint Title" },
                 { title: "Domain", field: "Domain" },
-                //{ title: "Expand View", field: "expandView", formatter: expandViewButtonFormatter, width: 100, headerSort: false, width: "fitData" },
-                { title: "Status", field: "Status", editor: "list", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }, headerFilter: "list", headerFilterParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"], multiselect: true, multiselectFilter: true }, headerFilterFunc: customMultiSelectFilter, width: "fitData", headerSort: false },
+                { title: "Status", field: "Status", editor: "list", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }},
                 { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
-                { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData" },
+                { title: "Student Reply Comments", field: "Student Reply Comments" },
                 { title: "Reviewer Name", field: "First + Last Name" },
                 { title: "Reviewer Email", field: "Reviewer Email" },
                 { title: "Backup Reviewer?", field: "Backup Reviewer?" },
@@ -243,23 +242,64 @@
                 { title: "Justification for Invite", field: "Justification for Invite" },
                 { title: "Student", field: "Student" },
                 { title: "Student Email", field: "Student Email" },
-                { title: "Email of Quality Checker", field: "Email of Quality Checker" },
                 { title: "Date of Proposal", field: "Date of Proposal" },
-                { title: "Date of Quality Check", field: "Date of Quality Check" },
                 { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)" }
             ];
+
+            const nonEditableFields = [
+                "Student",
+                "Student Email",
+                "Date of Proposal",
+                "Preprint Status (from Preprint Info ONLY)",
+                "Preprint Title",
+                "Domain",
+                "Link to Profile"
+            ];
+
             columnDefs.forEach(column => {
                 const key = column.field;
                 if (key && data[key] !== undefined) {
                     let value = data[key];
                     if (key === "Link to Profile" || key === "Link to Publications" || key === "DOI of Best Match Paper") {
                         const url = value.startsWith("https") ? value : `http://${value}`;
-                        value = `<a href="${url}" target="_blank">${url}</a>`;
+                        value = url;
                     }
                     if (key === "Backup Reviewer?") {
                         value = value ? "Yes" : "No";
                     }
-                    contents += `<div><strong>${column.title}:</strong> ${value}</div>`;
+
+                    if (nonEditableFields.includes(key)) {
+                        if (key === "Link to Profile") {
+                            contents += `<div><strong>${column.title}:</strong> <a href="${value}" target="_blank">${value}</a></div>`;
+                        } else {
+                            contents += `<div><strong>${column.title}:</strong> ${value}</div>`;
+                        }
+                    } else if (key === "Status") {
+                        contents += `<div><strong>${column.title}:</strong> 
+                                    <select class="popup-input" data-field="${key}">
+                                        <option value="Invite"${value === "Invite" ? " selected" : ""}>Invite</option>
+                                        <option value="Invite Backup"${value === "Invite Backup" ? " selected" : ""}>Invite Backup</option>
+                                        <option value="Double Check"${value === "Double Check" ? " selected" : ""}>Double Check</option>
+                                        <option value="Reject"${value === "Reject" ? " selected" : ""}>Reject</option>
+                                        <option value="Fixable"${value === "Fixable" ? " selected" : ""}>Fixable</option>
+                                        <option value="Unchecked"${value === "Unchecked" ? " selected" : ""}>Unchecked</option>
+                                        <option value="Fixed"${value === "Fixed" ? " selected" : ""}>Fixed</option>
+                                    </select>
+                                    </div>`;
+                    } else if (key === "Link to Publications" || key === "DOI of Best Match Paper") {
+                        const displayText = value.startsWith("https") ? value.replace(/^https?:\/\//, '') : value;
+                        contents += `<div><strong>${column.title}:</strong> 
+                                    <input type="text" class="popup-input" data-field="${key}" value="${displayText}" />
+                                    </div>`;
+                    } else if (key === "Justification for Invite") {
+                        contents += `<div><strong>${column.title}:</strong> 
+                                    <textarea class="popup-input" data-field="${key}" rows="4" style="width: 100%;">${value}</textarea>
+                                    </div>`;
+                    } else {
+                        contents += `<div><strong>${column.title}:</strong> 
+                                    <input type="text" class="popup-input" data-field="${key}" value="${value}" />
+                                    </div>`;
+                    }
                 }
             });
 
@@ -303,7 +343,35 @@
                     previousHighlightedRow.style.backgroundColor = "";
                 }
             };
+
+            // Attach event listeners to input elements for inline editing
+            const inputs = container.querySelectorAll('.popup-input');
+            inputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const field = this.getAttribute('data-field');
+                    let newValue = this.value;
+                    console.log(`Updating field ${field} to ${newValue}`);
+
+                    if (field === "Link to Publications" || field === "DOI of Best Match Paper") {
+                        newValue = `https://${newValue.replace(/^https?:\/\//, '')}`;
+                    }
+
+                    row.update({ [field]: newValue });
+
+                    // Optionally, update Airtable directly from here
+                    const recordId = row.getData().id;
+                    updateAirtable(recordId, field, newValue);
+                });
+            });
+           
         }
+
+        
+
+
+
+
+
 
 
         function expandViewButtonFormatter(cell, formatterParams, onRendered) {
@@ -418,7 +486,7 @@
                 { title: "Date of Quality Check", field: "Date of Quality Check" },
                 { title: "Preprint Status", field: "Preprint Status (from Preprint Info ONLY)" },
                 { title: "Urgent", field: "Urgent" },
-               
+                { title: "Duplicate Domain", field: "Duplicate Domain"},
             ];
             console.log('Column Definitions:', columns);
 
@@ -465,27 +533,79 @@
                 },
                 groupToggleElement: "header", // Allow toggling by clicking the group header
             });
-/*
-            table.on("groupToggle", function(group) {
-                console.log("Group toggled:", group);
 
-                const allGroups = table.getGroups();
-                allGroups.forEach(g => {
-                    console.log("Processing group:", g);
-                    if (g !== group) {
-                        g.close();
-                        g.getElement().style.display = 'none'; // Hide other group headers
-                        console.log("Group hidden:", g);
-                    } else {
-                        g.getElement().style.display = 'block'; // Show the clicked group header
-                        console.log("Group shown:", g);
-                    }
-                });
+            // Call these functions after the table is built and data is loaded
+            table.on("tableBuilt", function() {
+                console.log("Table built");
+                updateTableFilter(); // Call updateTableFilter after table is built
+                preloadStatusFilter();
+                colorDuplicateDomainColumns();
+                colorUrgentGroupHeaders();
             });
-*/
 
-        // Function to handle group header click events with basic logging
-        function addGroupHeaderClickListener() {
+            table.on("dataFiltered", function() {
+                console.log("Data filtered");
+                colorDuplicateDomainColumns();
+                colorUrgentGroupHeaders();
+            });
+
+            table.on("dataLoaded", function() {
+                console.log("Data loaded");
+                colorDuplicateDomainColumns();
+                colorUrgentGroupHeaders();
+            });
+
+      
+     
+        //color the columns based on "Duplicate Domain"
+        function colorDuplicateDomainColumns() {
+            console.log("Running colorDuplicateDomainColumns function");
+            table.getRows().forEach(row => {
+                const data = row.getData();
+                console.log("Row data:", data);
+                if (data["Duplicate Domain"]) {
+                    console.log("Duplicate Domain is checked for row:", data);
+                    row.getCells().forEach(cell => {
+                        const field = cell.getField();
+                        if (field !== "Duplicate Domain") {
+                            console.log(`Coloring cell in field ${field}`);
+                            const cellElement = cell.getElement();
+                            console.log("Cell element before coloring:", cellElement);
+                            cellElement.style.backgroundColor = "rgba(255, 165, 0, 0.2)"; // Faint orange color
+                            console.log("Cell element after coloring:", cellElement);
+                        }
+                    });
+                }
+            });
+        }
+
+
+
+        // color the group headers based on "Urgent"
+        function colorUrgentGroupHeaders() {
+            console.log("Running colorUrgentGroupHeaders function");
+            table.getGroups().forEach(group => {
+                const rows = group.getRows();
+                const urgent = rows.some(row => {
+                    const data = row.getData()["Urgent"];
+                    const name = row.getData()["Preprint Title"];
+                    console.log("Urgent data for row:", name, data);
+                    return Array.isArray(data) ? data.includes("Yes") || data.includes(true) : data === "Yes" || data === true;
+             });
+
+                if (urgent) {
+                    console.log(`Coloring group header for group ${group.getKey()}`);
+                    const groupElement = group.getElement();
+                    console.log("Group element before coloring:", groupElement);
+                    groupElement.style.backgroundColor = "rgba(255, 69, 0, 0.2)"; // Faint reddish orange color
+                    console.log("Group element after coloring:", groupElement);
+                }
+            });
+        }
+
+    // Function to handle group header click events with basic logging
+  /*  
+    function addGroupHeaderClickListener() {
             const groupHeaders = document.querySelectorAll('.tabulator-group-header');
 
             groupHeaders.forEach(header => {
@@ -494,89 +614,7 @@
                 });
             });
         }
-
-        // Attach the click listener when the table is built
-        table.on("tableBuilt", function() {
-            const allGroups = table.getGroups();
-            console.log('All groups on table built:', allGroups);
-            allGroups.forEach(g => {
-                g.getElement().style.display = 'block'; // Ensure all group headers are visible initially
-            });
-            addGroupHeaderClickListener(); // Add click listeners to group headers
-            updateTableFilter(); // Call updateTableFilter after table is built
-            preloadStatusFilter();
-        });
-
-           
-
-        function handleGroupHeaderClick(clickedGroup) {
-                console.log("Clicked group:", clickedGroup);
-
-                // Toggle the visibility of the clicked group
-                clickedGroup.toggle();
-
-                // Check if the clicked group is currently open or closed by checking its visibility
-                const isClosed = !clickedGroup.isVisible();
-
-                if (!isClosed) {
-                    console.log("Group is open, hiding rows above.");
-
-                    // The group is open, so we need to hide rows above it
-
-                    // Get all group headers
-                    const allGroups = table.getGroups();
-                    console.log("All groups:", allGroups);
-
-                    // Loop through each group
-                    let hide = true;
-                    for (const g of allGroups) {
-                        console.log("Processing group:", g);
-
-                        if (g.getKey() === clickedGroup.getKey()) {
-                            hide = false;
-                        }
-
-                        if (hide) {
-                            console.log("Hiding group:", g);
-                            // Hide the group's rows
-                            g.hide();
-                        } 
-                        /*else {
-                            console.log("Showing group:", g);
-                            // Show the group
-                            g.getRows().forEach(row => row.getElement().style.display = '');
-                        }*/
-                    }
-                } else {
-                    console.log("Group is closed, showing all group headers.");
-
-                    // The group is closed, so we need to show all group headers
-
-                    // Get all group headers
-                    const allGroups = table.getGroups();
-                    console.log("All groups:", allGroups);
-
-                    // Loop through each group
-                    for (const g of allGroups) {
-                        console.log("Showing group:", g);
-
-                        // Ensure all group headers and rows are visible
-                        g.show();
-                    }
-                }
-            }
-
-
-
-
-
-            table.on("groupClick", function(e, group) {
-                console.log("Header clicked:", group);
-                handleGroupHeaderClick(group);
-            });
-
-
-
+*/
 
             table.on("cellEditing", async function(cell) {
                 const row = cell.getRow();
@@ -631,47 +669,47 @@
             console.error('Error fetching data from Airtable:', error);
         });
 
+                
+        // Add event listeners to filter buttons
+        document.querySelectorAll('.filter-button-domain').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
+                    this.style.backgroundColor = 'white'; // deselect
+                    this.style.color = '#4ebdd2';
+                    this.style.border = '2px solid #4ebdd2';
+                } else {
+                    this.style.backgroundColor = '#4ebdd2'; // select
+                    this.style.color = 'white';
+                    this.style.border = 'none';
+                }
+                updateTableFilter();
+            });
+        });
+        // Select "ON HOLD" and "ACTIVE" buttons by default
+        document.querySelectorAll('.filter-button-preprint-status[data-status="ON HOLD"], .filter-button-preprint-status[data-status="ACTIVE"]').forEach(button => {
+            button.style.backgroundColor = '#4ebdd2';
+            button.style.color = 'white';
+            button.style.border = 'none';
+            updateTableFilter();
+        });
         
-// Add event listeners to filter buttons
-document.querySelectorAll('.filter-button-domain').forEach(button => {
-    button.addEventListener('click', function() {
-        if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
-            this.style.backgroundColor = 'white'; // deselect
-            this.style.color = '#4ebdd2';
-            this.style.border = '2px solid #4ebdd2';
-        } else {
-            this.style.backgroundColor = '#4ebdd2'; // select
-            this.style.color = 'white';
-            this.style.border = 'none';
-        }
-        updateTableFilter();
-    });
-});
-// Select "ON HOLD" and "ACTIVE" buttons by default
-document.querySelectorAll('.filter-button-preprint-status[data-status="ON HOLD"], .filter-button-preprint-status[data-status="ACTIVE"]').forEach(button => {
-    button.style.backgroundColor = '#4ebdd2';
-    button.style.color = 'white';
-    button.style.border = 'none';
-    updateTableFilter();
-});
-//updateTableFilter();
 
-document.querySelectorAll('.filter-button-preprint-status').forEach(button => {
-    button.addEventListener('click', function() {
-        if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
-            this.style.backgroundColor = 'white'; // deselect
-            this.style.color = '#4ebdd2';
-            this.style.border = '2px solid #4ebdd2';
-        } else {
-            this.style.backgroundColor = '#4ebdd2'; // select
-            this.style.color = 'white';
-            this.style.border = 'none';
-        }
-        updateTableFilter();
-    });
-});
+        document.querySelectorAll('.filter-button-preprint-status').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
+                    this.style.backgroundColor = 'white'; // deselect
+                    this.style.color = '#4ebdd2';
+                    this.style.border = '2px solid #4ebdd2';
+                } else {
+                    this.style.backgroundColor = '#4ebdd2'; // select
+                    this.style.color = 'white';
+                    this.style.border = 'none';
+                }
+                updateTableFilter();
+            });
+        });
 
-// Function to update the table filter based on selected buttons
+
 // Function to update the table filter based on selected buttons
 function updateTableFilter() {
     const selectedDomains = Array.from(document.querySelectorAll('.filter-button-domain'))
@@ -707,9 +745,100 @@ function updateTableFilter() {
                 return selectedPreprintStatuses.includes(preprintStatus);
             });
         }
+        
     }
 }
 
+/*
+        // Attach the click listener when the table is built
+        table.on("tableBuilt", function() {
+            const allGroups = table.getGroups();
+            console.log('All groups on table built:', allGroups);
+            allGroups.forEach(g => {
+                g.getElement().style.display = 'block'; // Ensure all group headers are visible initially
+            });
+            //addGroupHeaderClickListener(); // Add click listeners to group headers
+            updateTableFilter(); // Call updateTableFilter after table is built
+            preloadStatusFilter();
+            colorDuplicateDomainColumns();
+            colorUrgentGroupHeaders();
+        });
+        */
+   /*
+        function addGroupHeaderClickListener() {
+            const groupHeaders = document.querySelectorAll('.tabulator-group-header');
+
+            groupHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    console.log("Group header clicked:", header);
+                });
+            });
+        }
+*/
+/*
+            table.on("groupClick", function(e, group) {
+                console.log("Header clicked:", group);
+                handleGroupHeaderClick(group);
+            });
+*/
+/*
+        function handleGroupHeaderClick(clickedGroup) {
+                console.log("Clicked group:", clickedGroup);
+
+                // Toggle the visibility of the clicked group
+                clickedGroup.toggle();
+
+                // Check if the clicked group is currently open or closed by checking its visibility
+                const isClosed = !clickedGroup.isVisible();
+
+                if (!isClosed) {
+                    console.log("Group is open, hiding rows above.");
+
+                    // The group is open, so we need to hide rows above it
+
+                    // Get all group headers
+                    const allGroups = table.getGroups();
+                    console.log("All groups:", allGroups);
+
+                    // Loop through each group
+                    let hide = true;
+                    for (const g of allGroups) {
+                        console.log("Processing group:", g);
+
+                        if (g.getKey() === clickedGroup.getKey()) {
+                            hide = false;
+                        }
+
+                        if (hide) {
+                            console.log("Hiding group:", g);
+                            // Hide the group's rows
+                            g.hide();
+                        } 
+                        /*else {
+                            console.log("Showing group:", g);
+                            // Show the group
+                            g.getRows().forEach(row => row.getElement().style.display = '');
+                        }
+                    }
+                } else {
+                    console.log("Group is closed, showing all group headers.");
+
+                    // The group is closed, so we need to show all group headers
+
+                    // Get all group headers
+                    const allGroups = table.getGroups();
+                    console.log("All groups:", allGroups);
+
+                    // Loop through each group
+                    for (const g of allGroups) {
+                        console.log("Showing group:", g);
+
+                        // Ensure all group headers and rows are visible
+                        g.show();
+                    }
+                }
+            }
+*/
 
 
 
