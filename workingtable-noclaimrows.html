@@ -134,7 +134,6 @@
 
 
         // Use the logged-in user's email from the window object
-   
         //const userEmail = window['logged_in_user']['softr_user_email'];
 
         async function fetchData() {
@@ -169,7 +168,7 @@
             const data = {
                 fields: {
                     [fieldName]: currentValue,
-                    //'Email of Quality Checker': userEmail, 
+                  //  'Email of Quality Checker': userEmail, 
                     'Date of Quality Check': currentDate
                 }
             };
@@ -211,17 +210,17 @@
         }
 
 
-    function rowPopupFormatter(row) {
+        function rowPopupFormatter(row) {
         const existingPopup = document.getElementById("row-popup");
         if (existingPopup) {
-                existingPopup.remove();
+        existingPopup.remove();
         }
 
-    const data = row.getData();
-    const container = document.createElement("div");
-    let contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
+        const data = row.getData();
+        const container = document.createElement("div");
+        let contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
 
-    const columnDefs = [
+        const columnDefs = [
         { title: "Preprint Title", field: "Preprint Title" },
         { title: "Domain", field: "Domain" },
         { title: "Status", field: "Status", editor: "list", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }},
@@ -248,9 +247,9 @@
         { title: "Date of Proposal", field: "Date of Proposal" },
         { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)" },
         { title: "Email of Quality Checker", field: "Email of Quality Checker" },
-    ];
+        ];
 
-    const nonEditableFields = [
+        const nonEditableFields = [
         "Student",
         "Student Email",
         "Date of Proposal",
@@ -258,9 +257,9 @@
         "Preprint Title",
         "Domain",
         "Email of Quality Checker"
-    ];
+        ];
 
-    columnDefs.forEach(column => {
+        columnDefs.forEach(column => {
         const key = column.field;
         if (key && data[key] !== undefined) {
             let value = data[key];
@@ -300,52 +299,52 @@
                             </div>`;
             }
         }
-    });
+        });
 
-    contents += "</div>";
+        contents += "</div>";
 
-    const exitButton = document.createElement("button");
-    exitButton.innerHTML = "X";
-    exitButton.style.position = "absolute";
-    exitButton.style.top = "10px";
-    exitButton.style.right = "10px";
-    exitButton.style.backgroundColor = "blue";
-    exitButton.style.color = "white";
-    exitButton.style.border = "none";
-    exitButton.style.borderRadius = "50%";
-    exitButton.style.cursor = "pointer";
-    exitButton.id = "exit-button";
+        const exitButton = document.createElement("button");
+        exitButton.innerHTML = "X";
+        exitButton.style.position = "absolute";
+        exitButton.style.top = "10px";
+        exitButton.style.right = "10px";
+        exitButton.style.backgroundColor = "blue";
+        exitButton.style.color = "white";
+        exitButton.style.border = "none";
+        exitButton.style.borderRadius = "50%";
+        exitButton.style.cursor = "pointer";
+        exitButton.id = "exit-button";
 
-    container.appendChild(exitButton);
-    container.innerHTML += contents;
-    container.style.position = "fixed";
-    container.style.top = "50%";
-    container.style.left = "50%";
-    container.style.transform = "translate(-50%, -50%)";
-    container.style.padding = "20px";
-    container.style.border = "1px solid #ddd";
-    container.style.backgroundColor = "#fff";
-    container.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1)";
-    container.style.borderRadius = "4px";
-    container.style.maxWidth = "600px";
-    container.style.maxHeight = "80%";
-    container.style.overflowY = "auto";
-    container.style.zIndex = "1000";
-    container.id = "row-popup";
+        container.appendChild(exitButton);
+        container.innerHTML += contents;
+        container.style.position = "fixed";
+        container.style.top = "50%";
+        container.style.left = "50%";
+        container.style.transform = "translate(-50%, -50%)";
+        container.style.padding = "20px";
+        container.style.border = "1px solid #ddd";
+        container.style.backgroundColor = "#fff";
+        container.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1)";
+        container.style.borderRadius = "4px";
+        container.style.maxWidth = "600px";
+        container.style.maxHeight = "80%";
+        container.style.overflowY = "auto";
+        container.style.zIndex = "1000";
+        container.id = "row-popup";
 
-    document.body.appendChild(container);
+        document.body.appendChild(container);
 
-    document.getElementById("exit-button").onclick = function() {
+        document.getElementById("exit-button").onclick = function() {
         container.remove();
         var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
         if (previousHighlightedRow) {
             previousHighlightedRow.style.backgroundColor = "";
         }
-    };
+        };
 
-    // Attach event listeners to input elements for inline editing
-    const inputs = container.querySelectorAll('.popup-input');
-    inputs.forEach(input => {
+        // Attach event listeners to input elements for inline editing
+        const inputs = container.querySelectorAll('.popup-input');
+        inputs.forEach(input => {
         input.addEventListener('change', function() {
             const field = this.getAttribute('data-field');
             let newValue = this.value;
@@ -361,11 +360,11 @@
             const recordId = row.getData().id;
             updateAirtable(recordId, field, newValue);
         });
-    });
+        });
 
-    // Toggle between displaying the link and input field on double-click or right-click
-    const editableLinks = container.querySelectorAll('.editable-link');
-    editableLinks.forEach(linkContainer => {
+        // Toggle between displaying the link and input field on double-click or right-click
+        const editableLinks = container.querySelectorAll('.editable-link');
+        editableLinks.forEach(linkContainer => {
         const link = linkContainer.querySelector('a');
         const input = linkContainer.querySelector('input');
 
@@ -383,7 +382,7 @@
 
         input.addEventListener('blur', function() {
             const newValue = input.value;
-            const url = newValue.startsWith("https") ? newValue : `http://${newValue}`;
+            const url = newValue.startsWith("https") ? newValue : `https://${newValue}`;
             link.href = url;
             link.textContent = newValue.length > 30 ? newValue.substring(0, 30) + "..." : newValue;
             input.style.display = 'none';
@@ -395,8 +394,8 @@
                 input.blur();
             }
         });
-    });
-}
+        });
+        }
 
 
                 
@@ -426,28 +425,28 @@
             };
             return button;
         }
-       
-// Custom group header formatter to color based on "Urgent" status
-function customGroupHeader(value, count, data, group) {
-    const isUrgent = data.some(row => {
+
+        // Custom group header formatter to color based on "Urgent" status
+        function customGroupHeader(value, count, data, group) {
+        const isUrgent = data.some(row => {
         const urgent = row["Urgent"];
         return Array.isArray(urgent) ? urgent.includes("Yes") || urgent.includes(true) : urgent === "Yes" || urgent === true;
-    });
+        });
 
-    const preprintTitle = data[0]["Preprint Title"];
-    const domain = data[0]["Domain"];
+        const preprintTitle = data[0]["Preprint Title"];
+        const domain = data[0]["Domain"];
 
-    // Return the formatted group header
-    return `<span style="display: inline-block; padding: 5px; ${isUrgent ? 'background-color: rgba(255, 0, 0, 0.3); color: black;' : 'color: black;'}">
+        // Return the formatted group header
+        return `<span style="display: inline-block; padding: 5px; ${isUrgent ? 'background-color: rgba(255, 0, 0, 0.3); color: black;' : 'color: black;'}">
                 ${domain}, ${count} items - ${preprintTitle}
             </span>`;
-}
-// Function to highlight rows with "Duplicate Domain" checked
-function highlightDuplicateDomains() {
-    const rows = table.getRows();
+        }
+        // Function to highlight rows with "Duplicate Domain" checked
+        function highlightDuplicateDomains() {
+        const rows = table.getRows();
 
-    // Highlight rows with "Duplicate Domain" checked
-    rows.forEach(row => {
+        // Highlight rows with "Duplicate Domain" checked
+        rows.forEach(row => {
         const duplicateDomain = row.getData()["Duplicate Domain"];
         const rowElement = row.getElement();
         if (duplicateDomain) {
@@ -455,13 +454,19 @@ function highlightDuplicateDomains() {
         } else {
             rowElement.style.backgroundColor = ""; // Reset to default
         }
-    });
-}
+        });
+        }
 
 
         fetchData().then(data => {
             console.log('Fetched data:', data);
-            
+            //const columns = Object.keys(data[0]).map(key => ({ title: key, field: key }));
+            /*
+            const columns = Object.keys(data[0])
+                .filter(key => key !== 'id' && key !== 'Preprint Title' && key !== 'Domain' && key !== 'recordid' && key !== 'preprintId')
+                .map(key => ({ title: key, field: key }));
+                */
+
             const columns = [
                 { title: "Expand View", field: "expandView", formatter: expandViewButtonFormatter, width: 100, headerSort: false, width: "fitData" },
                 {
@@ -493,7 +498,7 @@ function highlightDuplicateDomains() {
                 { title: "Other Degree", field: "Other Degree" },
                 { title: "Title", field: "Title", editor: "list",
                     editorParams: { values: ["Professor", "Associate Professor", "Assistant Professor", "Research Associate Professor", "Director", "Department Head", "Researcher", "Research Officer"] },
-                 },
+                },
                 { 
                     title: "Link to Profile", 
                     field: "Link to Profile",
@@ -501,7 +506,7 @@ function highlightDuplicateDomains() {
                     formatter: function(cell, formatterParams, onRendered) {
                         var value = cell.getValue();
                         if (value && typeof value === 'string' && value.startsWith("https")) {
-                            var url = value.startsWith("https") ? value : `http://${value}`;
+                            var url = value.startsWith("https") ? value : `https://${value}`;
                             var displayText = value.length > 30 ? value.substring(0, 30) + "..." : value;
                             return `<a href="${url}" target="_blank">${displayText}</a>`;
                         } else {
@@ -518,7 +523,7 @@ function highlightDuplicateDomains() {
                     formatter: function(cell, formatterParams, onRendered) {
                         var value = cell.getValue();
                         if (value && typeof value === 'string' && value.startsWith("https")) {
-                            var url = value.startsWith("https") ? value : `http://${value}`;
+                            var url = value.startsWith("https") ? value : `https://${value}`;
                             var displayText = value.length > 30 ? value.substring(0, 30) + "..." : value;
                             return `<a href="${url}" target="_blank">${displayText}</a>`;
                         } else {
@@ -534,7 +539,7 @@ function highlightDuplicateDomains() {
                     formatter: function(cell, formatterParams, onRendered) {
                         var value = cell.getValue();
                         if (value && typeof value === 'string' && value.startsWith("https")) {
-                            var url = value.startsWith("https") ? value : `http://${value}`;
+                            var url = value.startsWith("https") ? value : `https://${value}`;
                             var displayText = value.length > 30 ? value.substring(0, 30) + "..." : value;
                             return `<a href="${url}" target="_blank">${displayText}</a>`;
                         } else {
@@ -567,7 +572,7 @@ function highlightDuplicateDomains() {
         const tableElement = document.getElementById('example-table');
         tableElement.style.width = `${totalWidth}px`;
         //console.log("Set width of table container: " + tableElement.style.width);
-        
+
 
             // Make all fields editable except the "Status" column which has specific settings
             const editableColumns = columns.map(col => {
@@ -589,21 +594,28 @@ function highlightDuplicateDomains() {
                     { column: "Date of Proposal", dir: "asc" }
                 ],
                 groupHeader: customGroupHeader, 
-                
+                /*
+                groupHeader: function(value, count, data) {
+                    const inviteCount = data[0]["Invite Count"];
+                    const preprintTitle = data[0]["Preprint Title"];
+                    const domain = data[0]["Domain"];
+
+                    return `${domain}, ${inviteCount} Invites,<span style='color:#d00;'>${count} items</span> - ${preprintTitle}`;
+                },*/
                 groupToggleElement: "header", // Allow toggling by clicking the group header
             });
         // Color the group headers based on "Urgent"
-function colorUrgentGroupHeaders() {
-    console.log("Running colorUrgentGroupHeaders function");
+        function colorUrgentGroupHeaders() {
+        console.log("Running colorUrgentGroupHeaders function");
 
-    // First, reset all group headers to the default background color
-    table.getGroups().forEach(group => {
+        // First, reset all group headers to the default background color
+        table.getGroups().forEach(group => {
         const groupElement = group.getElement();
         groupElement.style.backgroundColor = ""; // Reset to default
-    });
+        });
 
-    // Then, apply the color to the "Urgent" groups
-    table.getGroups().forEach(group => {
+        // Then, apply the color to the "Urgent" groups
+        table.getGroups().forEach(group => {
         const rows = group.getRows();
         const urgent = rows.some(row => {
             const data = row.getData()["Urgent"];
@@ -619,45 +631,45 @@ function colorUrgentGroupHeaders() {
             groupElement.style.backgroundColor = "rgba(255, 0, 0, 0.3)"; // Translucent red color
             console.log("Group element after coloring:", groupElement);
         }
-    });
-}
+        });
+        }
 
-// Function to handle group header click events with basic logging
-function addGroupHeaderClickListener() {
-    const groupHeaders = document.querySelectorAll('.tabulator-group-header');
-    groupHeaders.forEach(header => {
+        // Function to handle group header click events with basic logging
+        function addGroupHeaderClickListener() {
+        const groupHeaders = document.querySelectorAll('.tabulator-group-header');
+        groupHeaders.forEach(header => {
         header.addEventListener('click', function() {
             console.log("Group header clicked:", header);
         });
-    });
-}
+        });
+        }
 
-table.on("tableBuilt", function() {
+        table.on("tableBuilt", function() {
         console.log("Table built");
         updateTableFilter(); // Call updateTableFilter after table is built
         preloadStatusFilter();
         colorUrgentGroupHeaders();
         highlightDuplicateDomains();
         addGroupHeaderClickListener(); // Add click listeners to group headers
-    });
+        });
 
-    table.on("dataFiltered", function() {
+        table.on("dataFiltered", function() {
         console.log("Data filtered");
         colorUrgentGroupHeaders();
         highlightDuplicateDomains();
-    });
+        });
 
-    table.on("dataLoaded", function() {
+        table.on("dataLoaded", function() {
         console.log("Data loaded");
         colorUrgentGroupHeaders();
         highlightDuplicateDomains();
-    });
+        });
 
-    table.on("dataChanged", function() {
+        table.on("dataChanged", function() {
         console.log("Data changed");
         colorUrgentGroupHeaders();
         highlightDuplicateDomains();
-    });
+        });
 
             table.on("cellEditing", async function(cell) {
                 const row = cell.getRow();
@@ -735,7 +747,7 @@ table.on("tableBuilt", function() {
             button.style.border = 'none';
             updateTableFilter();
         });
-        
+
 
         document.querySelectorAll('.filter-button-preprint-status').forEach(button => {
             button.addEventListener('click', function() {
@@ -753,20 +765,20 @@ table.on("tableBuilt", function() {
         });
 
 
-// Function to update the table filter based on selected buttons
-function updateTableFilter() {
-    const selectedDomains = Array.from(document.querySelectorAll('.filter-button-domain'))
+        // Function to update the table filter based on selected buttons
+        function updateTableFilter() {
+        const selectedDomains = Array.from(document.querySelectorAll('.filter-button-domain'))
                                 .filter(button => button.style.backgroundColor === 'rgb(78, 189, 210)')
                                 .map(button => button.getAttribute('data-domain'));
 
-    const selectedPreprintStatuses = Array.from(document.querySelectorAll('.filter-button-preprint-status'))
+        const selectedPreprintStatuses = Array.from(document.querySelectorAll('.filter-button-preprint-status'))
                                 .filter(button => button.style.backgroundColor === 'rgb(78, 189, 210)')
                                 .map(button => button.getAttribute('data-status'));
-    console.log('Selected domains:', selectedDomains);
+        console.log('Selected domains:', selectedDomains);
                                 
-    console.log('Selected preprint statuses:', selectedPreprintStatuses);
+        console.log('Selected preprint statuses:', selectedPreprintStatuses);
 
-    if (table) { // Ensure table is defined
+        if (table) { // Ensure table is defined
         table.clearFilter(true); // clear existing filters but retain header filters
 
         if (selectedDomains.length > 0) {
@@ -787,105 +799,17 @@ function updateTableFilter() {
                 }
                 return selectedPreprintStatuses.includes(preprintStatus);
             });
+             }
+
+         }
+
         }
-        
-    }
-
-}
-
-/*
-        // Attach the click listener when the table is built
-        table.on("tableBuilt", function() {
-            const allGroups = table.getGroups();
-            console.log('All groups on table built:', allGroups);
-            allGroups.forEach(g => {
-                g.getElement().style.display = 'block'; // Ensure all group headers are visible initially
-            });
-            //addGroupHeaderClickListener(); // Add click listeners to group headers
-            updateTableFilter(); // Call updateTableFilter after table is built
-            preloadStatusFilter();
-            colorDuplicateDomainColumns();
-            colorUrgentGroupHeaders();
-        });
-        */
-   /*
-        function addGroupHeaderClickListener() {
-            const groupHeaders = document.querySelectorAll('.tabulator-group-header');
-
-            groupHeaders.forEach(header => {
-                header.addEventListener('click', function() {
-                    console.log("Group header clicked:", header);
-                });
-            });
-        }
-*/
-/*
-            table.on("groupClick", function(e, group) {
-                console.log("Header clicked:", group);
-                handleGroupHeaderClick(group);
-            });
-*/
-/*
-        function handleGroupHeaderClick(clickedGroup) {
-                console.log("Clicked group:", clickedGroup);
-
-                // Toggle the visibility of the clicked group
-                clickedGroup.toggle();
-
-                // Check if the clicked group is currently open or closed by checking its visibility
-                const isClosed = !clickedGroup.isVisible();
-
-                if (!isClosed) {
-                    console.log("Group is open, hiding rows above.");
-
-                    // The group is open, so we need to hide rows above it
-
-                    // Get all group headers
-                    const allGroups = table.getGroups();
-                    console.log("All groups:", allGroups);
-
-                    // Loop through each group
-                    let hide = true;
-                    for (const g of allGroups) {
-                        console.log("Processing group:", g);
-
-                        if (g.getKey() === clickedGroup.getKey()) {
-                            hide = false;
-                        }
-
-                        if (hide) {
-                            console.log("Hiding group:", g);
-                            // Hide the group's rows
-                            g.hide();
-                        } 
-                        /*else {
-                            console.log("Showing group:", g);
-                            // Show the group
-                            g.getRows().forEach(row => row.getElement().style.display = '');
-                        }
-                    }
-                } else {
-                    console.log("Group is closed, showing all group headers.");
-
-                    // The group is closed, so we need to show all group headers
-
-                    // Get all group headers
-                    const allGroups = table.getGroups();
-                    console.log("All groups:", allGroups);
-
-                    // Loop through each group
-                    for (const g of allGroups) {
-                        console.log("Showing group:", g);
-
-                        // Ensure all group headers and rows are visible
-                        g.show();
-                    }
-                }
-            }
-*/
 
 
 
     </script>
 </body>
 </html>
+
+
+
