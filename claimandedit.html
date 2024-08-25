@@ -193,12 +193,11 @@
                 console.error(`Error updating record ${recordId}:`, error);
             }
         }
-// Function to claim a row and prepare it for editing
 async function claimAndEditRow(cell) {
     const row = cell.getRow();
     const recordId = row.getData().id;
-    const currentData = row.getData();
     const userEmail = window['logged_in_user']['softr_user_email'];
+    const buttonElement = cell.getTable().getRow(recordId).getCell("expandView").getElement().buttonElement;
 
     // Fetch the latest data for the record to ensure we are working with the most recent information
     const latestData = await fetchRowData(recordId);
@@ -207,30 +206,38 @@ async function claimAndEditRow(cell) {
     if (latestData["Taken"] && latestData["Taken Email"] !== userEmail) {
         alert("This record is already taken by another user.");
         row.update(latestData); // Refresh the row to show the latest data
+        buttonElement.disabled = true;
+        buttonElement.style.cursor = "not-allowed";
+        buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
         return false; // Prevent further editing
-    }else if (latestData["Taken"] && latestData["Taken Email"] === userEmail) { // If the row is already claimed by the current user, allow them to unclaim it
+    } else if (latestData["Taken"] && latestData["Taken Email"] === userEmail) { // If the row is already claimed by the current user, allow them to unclaim it
         latestData["Taken"] = false;
         latestData["Taken Email"] = null;
         await updateAirtable(recordId, "Taken", false);
-        console.log("claim and edit clearing email");
         await updateAirtable(recordId, "Taken Email", null);
-        console.log("claim and edit cleared email");
         row.update(latestData); // Update the UI
+        buttonElement.disabled = true;
+        buttonElement.style.cursor = "not-allowed";
+        buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
         return false; // Prevent further editing until they re-claim it
-    }else if (!latestData["Taken"]) {  // If the row is not claimed, allow the current user to claim it
+    } else if (!latestData["Taken"]) {  // If the row is not claimed, allow the current user to claim it
         latestData["Taken"] = true;
         latestData["Taken Email"] = userEmail;
         await updateAirtable(recordId, "Taken", true);
-         console.log("claim and edit updating email");
         await updateAirtable(recordId, "Taken Email", userEmail);
-        console.log("claim and edit updated email");
         row.update(latestData); // Update the UI
+        buttonElement.disabled = false;
+        buttonElement.style.cursor = "pointer";
+        buttonElement.style.backgroundColor = "#4ebdd2"; // Enable the button
         return true; // Allow editing after claiming
     }
 
-    // If the row was already claimed by the user and they are editing another cell
     return true;
 }
+
+
+
+
 
         function customMultiSelectFilter(headerValue, rowValue) {
             if (!headerValue || headerValue.length === 0) {
@@ -457,25 +464,47 @@ async function claimAndEditRow(cell) {
 
 
 
-        function expandViewButtonFormatter(cell, formatterParams, onRendered) {
-            var button = document.createElement("button");
-            button.innerHTML = "Expand View";
-            button.style.backgroundColor = "#4ebdd2";
-            button.style.color = "white";
-            button.style.border = "none";
-            button.style.borderRadius = "4px";
-            button.style.cursor = "pointer";
-            button.onclick = function() {
-                var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
-                if (previousHighlightedRow) {
-                    previousHighlightedRow.style.backgroundColor = "";
-                }
-                var currentRowElement = cell.getRow().getElement();
-                currentRowElement.style.backgroundColor = "rgba(78, 189, 210, 0.5)";
-                rowPopupFormatter(cell.getRow());
-            };
-            return button;
+ function expandViewButtonFormatter(cell, formatterParams, onRendered) {
+    var button = document.createElement("button");
+    button.innerHTML = "Expand View";
+    button.style.backgroundColor = "#4ebdd2";
+    button.style.color = "white";
+    button.style.border = "none";
+    button.style.borderRadius = "4px";
+    button.style.cursor = "pointer";
+
+    // Initially disable the button if not claimed
+    var rowData = cell.getRow().getData();
+    var userEmail = window['logged_in_user']['softr_user_email'];
+
+    if (!rowData["Taken"] || rowData["Taken Email"] !== userEmail) {
+        button.disabled = true;
+        button.style.cursor = "not-allowed";
+        button.style.backgroundColor = "#ccc"; // Indicate disabled state
+        button.title = "You cannot expand this view because the row is not claimed by you.";
+    }
+
+    // Handle button click
+    button.onclick = function () {
+        if (!button.disabled) {
+            var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
+            if (previousHighlightedRow) {
+                previousHighlightedRow.style.backgroundColor = "";
+            }
+            var currentRowElement = cell.getRow().getElement();
+            currentRowElement.style.backgroundColor = "rgba(78, 189, 210, 0.5)";
+            rowPopupFormatter(cell.getRow());
         }
+    };
+
+    // Store the button reference in the cell's element for later access
+    cell.getElement().buttonElement = button;
+
+    return button;
+}
+
+
+
 
         // Custom group header formatter to color based on "Urgent" status
         function customGroupHeader(value, count, data, group) {
