@@ -173,6 +173,15 @@
         }
 
 
+        // Debounce function to limit the rate of function execution
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
         async function updateAirtable(recordId, fieldName, currentValue) {
             const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
             const headers = { Authorization: `Bearer ${airtableToken}`, 'Content-Type': 'application/json' };
@@ -193,6 +202,7 @@
                 console.error(`Error updating record ${recordId}:`, error);
             }
         }
+
 async function claimAndEditRow(cell) {
     const row = cell.getRow();
     const recordId = row.getData().id;
@@ -206,9 +216,11 @@ async function claimAndEditRow(cell) {
     if (latestData["Taken"] && latestData["Taken Email"] !== userEmail) {
         alert("This record is already taken by another user.");
         row.update(latestData); // Refresh the row to show the latest data
-        buttonElement.disabled = true;
-        buttonElement.style.cursor = "not-allowed";
-        buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.style.cursor = "not-allowed";
+            buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
+        }
         return false; // Prevent further editing
     } else if (latestData["Taken"] && latestData["Taken Email"] === userEmail) { // If the row is already claimed by the current user, allow them to unclaim it
         latestData["Taken"] = false;
@@ -216,9 +228,11 @@ async function claimAndEditRow(cell) {
         await updateAirtable(recordId, "Taken", false);
         await updateAirtable(recordId, "Taken Email", null);
         row.update(latestData); // Update the UI
-        buttonElement.disabled = true;
-        buttonElement.style.cursor = "not-allowed";
-        buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.style.cursor = "not-allowed";
+            buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
+        }
         return false; // Prevent further editing until they re-claim it
     } else if (!latestData["Taken"]) {  // If the row is not claimed, allow the current user to claim it
         latestData["Taken"] = true;
@@ -226,18 +240,16 @@ async function claimAndEditRow(cell) {
         await updateAirtable(recordId, "Taken", true);
         await updateAirtable(recordId, "Taken Email", userEmail);
         row.update(latestData); // Update the UI
-        buttonElement.disabled = false;
-        buttonElement.style.cursor = "pointer";
-        buttonElement.style.backgroundColor = "#4ebdd2"; // Enable the button
+        if (buttonElement) {
+            buttonElement.disabled = false;
+            buttonElement.style.cursor = "pointer";
+            buttonElement.style.backgroundColor = "#4ebdd2"; // Enable the button
+        }
         return true; // Allow editing after claiming
     }
 
     return true;
 }
-
-
-
-
 
         function customMultiSelectFilter(headerValue, rowValue) {
             if (!headerValue || headerValue.length === 0) {
@@ -865,6 +877,9 @@ table.on("cellEdited", async function(cell) {
         });
 
                 
+        // Debounced version of updateTableFilter
+        const debouncedUpdateTableFilter = debounce(updateTableFilter, 300);
+
         // Add event listeners to filter buttons
         document.querySelectorAll('.filter-button-domain').forEach(button => {
             button.addEventListener('click', function() {
@@ -877,7 +892,7 @@ table.on("cellEdited", async function(cell) {
                     this.style.color = 'white';
                     this.style.border = 'none';
                 }
-                updateTableFilter();
+                debouncedUpdateTableFilter();
             });
         });
         // Select "ON HOLD" and "ACTIVE" buttons by default
@@ -885,7 +900,7 @@ table.on("cellEdited", async function(cell) {
             button.style.backgroundColor = '#4ebdd2';
             button.style.color = 'white';
             button.style.border = 'none';
-            updateTableFilter();
+            debouncedUpdateTableFilter();
         });
 
 
@@ -900,7 +915,7 @@ table.on("cellEdited", async function(cell) {
                     this.style.color = 'white';
                     this.style.border = 'none';
                 }
-                updateTableFilter();
+                debouncedUpdateTableFilter();
             });
         });
 
