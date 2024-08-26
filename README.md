@@ -1,12 +1,10 @@
 # rrid-softr-custom-code
 
-[Edit in StackBlitz next generation editor ⚡️](https://stackblitz.com/~/github.com/aculich/rrid-softr-custom-code)
-
-[Open in StackBlitz on current branch](https://stackblitz.com/github.com/aculich/rrid-softr-custom-code/tree/feature/debounce-claimandedit)
+[Open in ⚡️ StackBlitz on current branch: feature/debounce-claimandedit](https://stackblitz.com/github.com/aculich/rrid-softr-custom-code/tree/feature/debounce-claimandedit)
 
 ## How to Merge the Code
 
-If the changes in the `fix/debounce-claimandedit` branch work as expected, you can merge the branch into the main branch. Follow these steps:
+If the changes in the `feature/debounce-claimandedit` branch work as expected, you can merge the branch into the main branch. Follow these steps:
 
 1. Ensure you are on the main branch:
     ```bash
@@ -18,9 +16,9 @@ If the changes in the `fix/debounce-claimandedit` branch work as expected, you c
     git pull origin main
     ```
 
-3. Merge the `fix/debounce-claimandedit` branch into the main branch:
+3. Merge the `feature/debounce-claimandedit` branch into the main branch:
     ```bash
-    git merge fix/debounce-claimandedit
+    git merge feature/debounce-claimandedit
     ```
 
 4. Push the merged changes to the remote repository:
@@ -28,7 +26,7 @@ If the changes in the `fix/debounce-claimandedit` branch work as expected, you c
     git push origin main
     ```
 
-By following these steps, you will integrate the changes from the `fix/debounce-claimandedit` branch into the main branch.
+By following these steps, you will integrate the changes from the `feature/debounce-claimandedit` branch into the main branch.
 
 # Description of Changes
 
