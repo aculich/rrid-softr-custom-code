@@ -159,12 +159,12 @@
                 offset = response.data.offset;
         
             } while (offset); // Keep fetching if there's an offset indicating more data
-        
+             
             const mappedData = allRecords
                 .map(record => {
                     const fields = record.fields;
-        
-                    // Set default values if they are undefined or missing
+                    // Log Record ID and check for the specific field
+       
                     fields.preprintId = fields["Preprint ID (pulled)"];
                     fields.Taken = fields.Taken !== undefined ? fields.Taken : false;
                     fields["Taken Email"] = fields["Taken Email"] !== undefined ? fields["Taken Email"] : null;
@@ -295,7 +295,7 @@ async function claimAndEditRow(cell) {
         function rowPopupFormatter(row) {
             const existingPopup = document.getElementById("row-popup");
             if (existingPopup) {
-            existingPopup.remove();
+                existingPopup.remove();
             }
     
             const data = row.getData();
@@ -309,12 +309,14 @@ async function claimAndEditRow(cell) {
             { title: "Student Reject Reason", field: "Student Reject Reason" },
             { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
             { title: "Student Reply Comments", field: "Student Reply Comments" },
-            { title: "Reviewer Name", field: "First + Last Name" },
+            { title: "Reviewer First Name", field: "First Name (Proposed Reviewer)" },
+            { title: "Reviewer Last Name", field: "Last Name (Proposed Reviewer)" },
+            
             { title: "Reviewer Email", field: "Reviewer Email" },
             { title: "Justification if not Institutional Email", field: "Justification if not Institutional Email" },
             { title: "Backup Reviewer?", field: "Backup Reviewer?" },
             { title: "Invite Backup For...", field: "Invite Backup For..." },
-            { title: "Justification Shouldn’t be Backup", field: "Justification Shouldn’t be Backup" },
+            { title: "Justification Should not be Backup", field: "Justification Should not be Backup" },
             { title: "Affiliation", field: "Affiliation" },
             { title: "Secondary Affiliation", field: "Secondary Affiliation" },
             { title: "Highest Degree", field: "Highest Degree", editor: "list", editorParams: { values: ["PhD", "DrPH", "DO", "MBBS", "JD", "EdD", "MD"] }},
@@ -343,13 +345,16 @@ async function claimAndEditRow(cell) {
             "Preprint Title",
             "Domain",
             "Email of Quality Checker",
-            "Justification for Invite"
+            
             ];
 
         columnDefs.forEach(column => {
         const key = column.field;
-        if (key && data[key] !== undefined) {
-            let value = data[key];
+        
+        if (key && (data[key] !== undefined || key === "Quality Check Reviewer Comments" || key === "Justification Should not be Backup")) {
+            let value = data[key] || "";
+            
+
             if (key === "Backup Reviewer?") {
                 value = value ? "Yes" : "No";
             }
@@ -572,27 +577,41 @@ async function claimAndEditRow(cell) {
         const preprintTitle = data[0]["Preprint Title"];
         const domain = data[0]["Domain"];
         const inviteCount = data[0]["Invite Count"];
+        const uncheckedCount = data[0]["Unchecked Count"];
+        
         // Return the formatted group header
         return `<span style="display: inline-block; padding: 5px; ${isUrgent ? 'background-color: rgba(255, 0, 0, 0.3); color: black;' : 'color: black;'}">
-                 ${domain}, ${count} proposals, ${inviteCount} invites, - ${preprintTitle}
+                 ${domain}, ${count} proposals, ${uncheckedCount} Unchecked, ${inviteCount} Invites, - ${preprintTitle}
             </span>`;
         }
         // Function to highlight rows with "Duplicate Domain" checked
         function highlightDuplicateDomains() {
-        const rows = table.getRows();
+            const rows = table.getRows();
+    
+            //highlight duplicate domain and invite backup
+            rows.forEach(row => {
+                const duplicateDomain = row.getData()["Duplicate Domain"];
+                const invitedforOtherPreprint = row.getData()["Invited for Other Preprint"];
+                const shouldNotBeInviteBackup = row.getData()["Should not be backup"];
+                const rowElement = row.getElement();
+                //green lit else where:  rowElement.style.backgroundColor = "rgba(240, 128, 128, 0.3)"; // Light coral for duplicate domain
+                if (shouldNotBeInviteBackup) {
+                    rowElement.style.backgroundColor = "rgba(255, 165, 0, 0.3)"; // Light orange
+                   
+                } else if (duplicateDomain) {
+                    rowElement.style.backgroundColor = "rgba(221, 160, 221, 0.3)"; // Light purple (lavender) with transparency
 
-        // Highlight rows with "Duplicate Domain" checked
-        rows.forEach(row => {
-        const duplicateDomain = row.getData()["Duplicate Domain"];
-        const rowElement = row.getElement();
-        if (duplicateDomain) {
-            rowElement.style.backgroundColor = "rgba(255, 165, 0, 0.3)"; // Light orange color
-        } else {
-            rowElement.style.backgroundColor = ""; // Reset to default
-        }
-        });
-        }
+                   
+                }else if (invitedforOtherPreprint) {
+                    rowElement.style.backgroundColor = "rgba(240, 128, 128, 0.3)"; // Light coral if invited elsewhere
 
+                   
+                } else {
+                    rowElement.style.backgroundColor = ""; // Reset to default
+                }
+            });
+    
+        }
 
         fetchData().then(data => {
             console.log('Fetched data:', data);
@@ -602,14 +621,34 @@ async function claimAndEditRow(cell) {
                 .filter(key => key !== 'id' && key !== 'Preprint Title' && key !== 'Domain' && key !== 'recordid' && key !== 'preprintId')
                 .map(key => ({ title: key, field: key }));
                 */
-
+            
             const columns = [
                 { title: "Expand View", field: "expandView", formatter: expandViewButtonFormatter, width: 100, headerSort: false, width: "fitData" },
-                
                 {
                     title: "Taken",
                     field: "Taken",
-                    formatter: "tickCross", // Display checkbox
+                    //formatter: "tickCross", // Display checkbox
+                    formatter: function(cell, formatterParams, onRendered) {
+                        const rowData = cell.getRow().getData();
+                        const takenEmail = rowData["Taken Email"];
+                        const userEmail = window['logged_in_user']['softr_user_email'];
+                        let icon;
+                
+                        // If the row is claimed by the logged-in user
+                        if (takenEmail === userEmail) {
+                            icon = "<span style='color: green;'>&#10004;</span>"; // Green check mark
+                        } 
+                        // If the row is claimed by someone else
+                        else if (takenEmail) {
+                            icon = "<span style='color: red;'>&#10008;</span>"; // Red "X"
+                        } 
+                        // If the row is unclaimed
+                        else {
+                            icon = "<span style='border: 1px solid #ddd; padding: 2px 4px; display: inline-block;'>&nbsp;</span>"; // Empty box
+                        }
+                
+                        return icon;
+                    },
                     editor: true, // Display as a checkbox
                     width: "fitData",
                     headerSort: false,
@@ -620,6 +659,8 @@ async function claimAndEditRow(cell) {
                         }
                     }
                 },
+                
+
                 
                 {
                     title: "Claimed by Me/ Unclaimed",
@@ -644,11 +685,12 @@ async function claimAndEditRow(cell) {
                     headerSort: false
                 },
 
+              
                 {
                     title: "Status",
                     field: "Status",
                     editor: "list",
-                    editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed", ] },
+                    editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
                     headerFilter: "list",
                     headerFilterParams: {
                         values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
@@ -657,17 +699,54 @@ async function claimAndEditRow(cell) {
                     },
                     headerFilterFunc: customMultiSelectFilter,
                     width: "fitData",
-                    headerSort: false
+                    headerSort: false,
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        var color = "";
+                
+                        switch (value) {
+                            case "Invite":
+                                color = "rgba(0, 255, 0, 0.3)"; // Green
+                                break;
+                            case "Fixable":
+                                color = "rgba(255, 165, 0, 0.6)"; // Orange
+                                break;
+                            case "Fixed":
+                                color = "rgba(255, 69, 0, 0.8)"; // Blood Orange for Fixed
+                                break;
+                            case "Invite Backup":
+                                color = "rgba(0, 255, 128, 0.3)"; // Teal
+                                break;
+                            case "Double Check":
+                                color = "rgba(255, 255, 0, 0.6)"; // Yellow
+                                break;
+                            case "Reject":
+                                color = "rgba(255, 0, 0, 0.6)"; // Red
+                                break;
+                            case "Unchecked":
+                                color = "rgba(192, 192, 192, 0.6)"; // Grey
+                                break;
+                            default:
+                                color = ""; // No color
+                                break;
+                        }
+                
+                        cell.getElement().style.backgroundColor = color;
+                        return value;
+                    }
                 },
+
                 { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
                 { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData"  },
                 { title: "Student Reject Reason", field: "Student Reject Reason", headerSort: false, width: "fitData"  },
-                { title: "Reviewer Name", field: "First + Last Name" },
+                { title: "Reviewer First Name", field: "First Name (Proposed Reviewer)" },
+                 { title: "Reviewer Last Name", field: "Last Name (Proposed Reviewer)" },
                 { title: "Reviewer Email", field: "Reviewer Email" },
                 { title: "Justification if not Institutional Email", field: "Justification if not Institutional Email" },
                 { title: "Backup Reviewer?", field: "Backup Reviewer?" },
                 { title: "Invite Backup For...", field: "Invite Backup For..." },
-                { title: "Justification Shouldn’t be Backup", field: "Justification Shouldn’t be Backup" },
+                { title: "Justification Should not be Backup", field: "Justification Should not be Backup" },
+                
                 { title: "Affiliation", field: "Affiliation" },
                 { title: "Secondary Affiliation", field: "Secondary Affiliation" },
                 { title: "Highest Degree", field: "Highest Degree", editor: "list",

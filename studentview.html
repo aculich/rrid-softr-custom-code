@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css">
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@2.0.2/build/global/luxon.min.js"></script>
+    <style>
+        body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .tabulator {
+      height: 500px; /* Fixed height */
+      width: 100%;   /* Set width to 100% of container */
+      max-width: 100%;
+      margin: 0 auto; /* Center the table */
+      border: 1px solid #ddd; /* Less prominent border */
+      border-radius: 4px;
+      background: #fff;
+      overflow-x: auto; /* Enable horizontal scrolling */
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Add shadow */
+      transition: all 0.3s ease; /* Smooth transitions */
+    }
+    
+    .tabulator .tabulator-header {
+      background-color: #191d4bff; /* Dark blue header background */
+      color: white; /* Header text color */
+      font-weight: bold;
+    }
+    
+    .tabulator .tabulator-header .tabulator-col {
+      background-color: #191d4bff; /* Dark blue column header background */
+      color: white; /* Column header text color */
+    }
+    
+    .tabulator .tabulator-cell {
+      white-space: pre-wrap; /* Allow text to wrap */
+      border: 1px solid #ddd;
+      padding: 10px;
+      transition: background-color 0.3s ease; /* Smooth transitions */
+    }
+    
+    .tabulator .tabulator-row {
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .tabulator .tabulator-row:nth-child(even) {
+      background-color: rgba(78, 189, 210, 0.2); /* Less opaque color */
+    }
+    
+    .tabulator .tabulator-row:nth-child(odd) {
+      background-color: #ffffff; /* Alternate row color */
+    }
+    
+    .tabulator .tabulator-row:hover {
+      background-color: #e9ecef; /* Hover effect */
+    }
+
+    .tabulator .tabulator-row .tabulator-cell input {
+      border: none;
+      padding: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      background-color: #ffffff; /* white input background */
+      color: #191d4bff; /* dark blue text color */
+    }
+
+    .tabulator .tabulator-row .tabulator-cell select {
+      border: none;
+      padding: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      background-color: #ffffff; /* white select background */
+      color: #191d4bff; /* dark blue text color */
+    }
+
+    .tabulator .tabulator-row .tabulator-cell textarea {
+      border: none;
+      padding: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      background-color: #ffffff; /* white textarea background */
+      color: #191d4bff; /* dark blue text color */
+    }
+    .tabulator .tabulator-header .tabulator-col.urgent-header {
+        background-color: orange;
+    }
+    
+
+    .tabulator-group.tabulator-group-active {
+        display: block; /* Only show active group header */
+    }
+
+    
+
+    </style>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 10px;">
+        <small>Domain</small>
+    </div>
+    <div id="filter-buttons-domain" style="text-align: center; margin-bottom: 5px;">
+        <button class="filter-button-domain" data-domain="PH" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Public Health</button>
+        <button class="filter-button-domain" data-domain="MedSci" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Medical Sciences</button>
+        <button class="filter-button-domain" data-domain="BCS" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Biological and Chemical Sciences</button>
+        <button class="filter-button-domain" data-domain="PSE" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Physical Sciences and Engineering</button>
+        <button class="filter-button-domain" data-domain="SSH" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">Social Sciences and Humanities</button>
+    </div>
+    <div style="text-align: center; margin-bottom: 10px;">
+        <small>Preprint Status</small>
+    </div>
+    <div id="filter-buttons-preprint-status" style="text-align: center; margin-bottom: 5px;">
+        <button class="filter-button-preprint-status" data-status="ON HOLD" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ON HOLD</button>
+        <button class="filter-button-preprint-status" data-status="ACTIVE" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">ACTIVE</button>
+        <button class="filter-button-preprint-status" data-status="COMPLETE" style="background-color: white; color: #4ebdd2; border: 2px solid #4ebdd2; border-radius: 4px; padding: 10px; margin-right: 5px; cursor: pointer;">COMPLETE</button>
+    </div>
+    
+    
+    <div id="example-table"></div>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+    <script>
+        const airtableToken = 'patxvMWE66lCprz7O.5ff60f4f628a145176a5c5badf898a8d495ae2f704b0895b2cf2d50fffca5c27';
+        const baseId = 'appAYosfmfSuHWiBT';
+        const tableId = 'tblHRiK0758oaO4jI';
+        let table; // Define table variable here
+
+
+        // Use the logged-in user's email from the window object
+   
+        const userEmail = window['logged_in_user']['softr_user_email'];
+
+      
+      
+         async function fetchData() {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}` };
+            let allRecords = [];
+            let offset = null;
+        
+            do {
+                const response = await axios.get(url, {
+                    headers,
+                    params: {
+                        offset: offset, // Include offset in params if it exists
+                    },
+                });
+        
+                console.log("Fetched batch of raw data from Airtable:", response.data.records);
+                
+                // Accumulate all records from this batch
+                allRecords = [...allRecords, ...response.data.records];
+        
+                // Check if there’s more data to fetch
+                offset = response.data.offset;
+        
+            } while (offset); // Keep fetching if there's an offset indicating more data
+        
+            const mappedData = allRecords
+                .map(record => {
+                    const fields = record.fields;
+        
+                    // Set default values if they are undefined or missing
+                    fields.preprintId = fields["Preprint ID (pulled)"];
+                    fields.Taken = fields.Taken !== undefined ? fields.Taken : false;
+                    fields["Taken Email"] = fields["Taken Email"] !== undefined ? fields["Taken Email"] : null;
+        
+                    delete fields["Preprint ID (pulled)"];
+                    return { id: record.id, ...fields };
+                })
+                .filter(record => record["Student Email"] === userEmail)
+                .filter(record => record["Incomplete?"] !== "Yes"); // Filter out records with "Incomplete? = Yes"
+        
+            console.log("Mapped and filtered data:", mappedData); // Log the data after mapping and filtering
+        
+            return mappedData;
+        }
+
+
+        async function fetchRowData(recordId) {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}` };
+            const response = await axios.get(url, { headers });
+            const fields = response.data.fields;
+            fields.preprintId = fields["Preprint ID (pulled)"];
+            delete fields["Preprint ID (pulled)"];
+            return { id: response.data.id, ...fields };
+        }
+    
+async function updateAirtable(recordId, fieldName, currentValue) {
+            const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+            const headers = { Authorization: `Bearer ${airtableToken}`, 'Content-Type': 'application/json' };
+            const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+
+            const data = {
+                fields: {
+                    [fieldName]: currentValue,
+                    
+                }
+            };
+
+            try {
+                await axios.patch(url, data, { headers });
+                console.log(`Updated record ${recordId}: ${fieldName} = ${currentValue}`);
+            } catch (error) {
+                console.error(`Error updating record ${recordId}:`, error);
+            }
+        }
+        function customMultiSelectFilter(headerValue, rowValue) {
+            if (!headerValue || headerValue.length === 0) {
+                return true;
+            }
+            if (Array.isArray(rowValue)) {
+                return rowValue.some(val => headerValue.includes(val));
+            }
+            return headerValue.includes(rowValue);
+        }
+        // Preload the Status filter
+        function preloadStatusFilter() {
+            table.setHeaderFilterValue("Status", ["Reject", "Fixable"]);
+        }
+
+        function customFilter(data) {
+            const status = data["Status"];
+            const preprintStatus = data["Preprint Status (from Preprint Info ONLY)"];
+            console.log('Filtering - Status:', status, 'Preprint Status:', preprintStatus);
+            
+            // Check if preprintStatus is an array and get the first element if it is
+            const preprintStatusValue = Array.isArray(preprintStatus) ? preprintStatus[0] : preprintStatus;
+            
+            const result = (status === "Unchecked" || status === "Fixed" || status === "Double Check") &&
+                        (preprintStatusValue === "ON HOLD" || preprintStatusValue === "ACTIVE");
+            console.log('Filter result:', result);
+            return result;
+        }
+
+
+        function rowPopupFormatter(row) {
+    const existingPopup = document.getElementById("row-popup");
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    const data = row.getData();
+    const container = document.createElement("div");
+    let contents = "<strong style='font-size:1.2em; display: block; margin-bottom: 10px;'>Row Details</strong><div style='display: flex; flex-direction: column; gap: 10px;'>";
+
+    const columnDefs = [
+        { title: "Preprint Title", field: "Preprint Title" },
+        { title: "Domain", field: "Domain" },
+        { title: "Status", field: "Status", editor: "list", editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] }},
+        { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
+        { title: "Student Reply Comments", field: "Student Reply Comments" },
+        { title: "Reviewer First Name", field: "First Name (Proposed Reviewer)" },
+        { title: "Reviewer Last Name", field: "Last Name (Proposed Reviewer)" },
+        { title: "Reviewer Email", field: "Reviewer Email" },
+        { title: "Backup Reviewer?", field: "Backup Reviewer?" },
+        { title: "Invite Backup For...", field: "Invite Backup For..." },
+        { title: "Justification Should not be Backup", field: "Justification Should not be Backup" },
+        { title: "Affiliation", field: "Affiliation" },
+        { title: "Secondary Affiliation", field: "Secondary Affiliation" },
+        { title: "Highest Degree", field: "Highest Degree" },
+        { title: "Other Degree", field: "Other Degree" },
+        { title: "Title", field: "Title" },
+        { title: "Link to Profile", field: "Link to Profile" },
+        { title: "Justification for Non-Institutional Profile", field: "Justification for Non-Institutional Profile" },
+        { title: "Subdiscipline", field: "Subdiscipline" },
+        { title: "Link to Publications", field: "Link to Publications" },
+        { title: "Justification if Link to Publications Not Pubmed", field: "Justification if Publications not Pubmed" },
+        { title: "Link to Best Match Paper", field: "DOI of Best Match Paper" },
+        { title: "Justification for Invite", field: "Justification for Invite" },
+        { title: "Student", field: "Student" },
+        { title: "Student Email", field: "Student Email" },
+        { title: "Date of Proposal", field: "Date of Proposal" },
+        { title: "Preprint Status (from Preprint Info ONLY)", field: "Preprint Status (from Preprint Info ONLY)" },
+        { title: "Email of Quality Checker", field: "Email of Quality Checker" },
+    ];
+
+    const nonEditableFields = [
+        "Student",
+        "Student Email",
+        "Date of Proposal",
+        "Preprint Status (from Preprint Info ONLY)",
+        "Preprint Title",
+        "Domain",
+        "Email of Quality Checker",
+        "Quality Check Reviewer Comments"
+    ];
+columnDefs.forEach(column => {
+        const key = column.field;
+        
+        if (key && (data[key] !== undefined || key === "Student Reply Comments")) {
+            let value = data[key] || "";
+            
+
+            if (key === "Backup Reviewer?") {
+                value = value ? "Yes" : "No";
+            }
+
+            if (nonEditableFields.includes(key)) {
+                contents += `<div><strong>${column.title}:</strong> ${value}</div>`;
+            } else if (key === "Link to Profile" || key === "Link to Publications" || key === "DOI of Best Match Paper") {
+                const displayText = value.startsWith("https") ? value.replace(/^https?:\/\//, '') : value;
+                contents += `<div><strong>${column.title}:</strong>
+                            <span class="editable-link" data-field="${key}" data-value="${value}">
+                                <a href="${value}" target="_blank">${displayText}</a>
+                                <input type="text" class="popup-input" style="display:none;" value="${displayText}">
+                            </span>
+                            </div>`;
+            } else if (key === "Status") {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <select class="popup-input" data-field="${key}">
+                                <option value="Invite"${value === "Invite" ? " selected" : ""}>Invite</option>
+                                <option value="Invite Backup"${value === "Invite Backup" ? " selected" : ""}>Invite Backup</option>
+                                <option value="Double Check"${value === "Double Check" ? " selected" : ""}>Double Check</option>
+                                <option value="Reject"${value === "Reject" ? " selected" : ""}>Reject</option>
+                                <option value="Fixable"${value === "Fixable" ? " selected" : ""}>Fixable</option>
+                                <option value="Unchecked"${value === "Unchecked" ? " selected" : ""}>Unchecked</option>
+                                <option value="Fixed"${value === "Fixed" ? " selected" : ""}>Fixed</option>
+                                <option value="Student Reject"${value === "Student Reject" ? " selected" : ""}>Student Reject</option>
+                            </select>
+                            </div>`;
+            }else if (key === "Title") {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <select class="popup-input" data-field="${key}">
+                                <option value="Professor"${value === "Professor" ? " selected" : ""}>Professor</option>
+                                <option value="Assistant Professor"${value === "Assistant Professor" ? " selected" : ""}>Assistant Professor</option>
+                                <option value="Scientist"${value === "Scientist" ? " selected" : ""}>Scientist</option>
+                                <option value="Associate Professor"${value === "Associate Professor" ? " selected" : ""}>Associate Professor</option>
+                                <option value="Research Officer"${value === "Research Officer" ? " selected" : ""}>Research Officer</option>
+                                <option value="Researcher"${value === "Researcher" ? " selected" : ""}>Researcher</option>
+                                <option value="Fixed"${value === "Fixed" ? " selected" : ""}>Fixed</option>
+                                <option value="Research Associate Professor"${value === "Research Associate Professor" ? " selected" : ""}>Research Associate Professor</option>
+                            </select>
+                            </div>`;
+            }else if (key === "Highest Degree") {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <select class="popup-input" data-field="${key}">
+                                <option value="PhD"${value === "PhD" ? " selected" : ""}>PhD</option>
+                                <option value="DrPH"${value === "DrPH" ? " selected" : ""}>DrPH</option>
+                                <option value="DO"${value === "DO" ? " selected" : ""}>DO</option>
+                                <option value="MBBS"${value === "MBBS" ? " selected" : ""}>MBBS</option>
+                                <option value="JD"${value === "JD" ? " selected" : ""}>JD</option>
+                                <option value="EdD"${value === "EdD" ? " selected" : ""}>EdD</option>
+                                <option value="MD"${value === "MD" ? " selected" : ""}>MD</option>
+                            </select>
+                            </div>`;
+            }
+            else if (key === "Justification for Invite") {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <textarea class="popup-input" data-field="${key}" rows="4" style="width: 100%;">${value}</textarea>
+                            </div>`;
+            } else {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <input type="text" class="popup-input" data-field="${key}" value="${value}" />
+                            </div>`;
+            }
+        }
+        });
+/*
+    columnDefs.forEach(column => {
+        const key = column.field;
+        if (key && (data[key] !== undefined || key === "Student Reply Comments")) {
+            let value = data[key] || "";
+            if (key === "Backup Reviewer?") {
+                value = value ? "Yes" : "No";
+            }
+
+            if (nonEditableFields.includes(key)) {
+                contents += `<div><strong>${column.title}:</strong> ${value}</div>`;
+            } else if (key === "Link to Profile" || key === "Link to Publications" || key === "DOI of Best Match Paper") {
+                const displayText = value.startsWith("https") ? value.replace(/^https?:\/\//, '') : value;
+                contents += `<div><strong>${column.title}:</strong>
+                            <span class="editable-link" data-field="${key}" data-value="${value}">
+                                <a href="${value}" target="_blank">${displayText}</a>
+                                <input type="text" class="popup-input" style="display:none;" value="${displayText}">
+                            </span>
+                            </div>`;
+            } else if (key === "Status") {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <select class="popup-input" data-field="${key}">
+                                <option value="Invite"${value === "Invite" ? " selected" : ""}>Invite</option>
+                                <option value="Invite Backup"${value === "Invite Backup" ? " selected" : ""}>Invite Backup</option>
+                                <option value="Double Check"${value === "Double Check" ? " selected" : ""}>Double Check</option>
+                                <option value="Reject"${value === "Reject" ? " selected" : ""}>Reject</option>
+                                <option value="Fixable"${value === "Fixable" ? " selected" : ""}>Fixable</option>
+                                <option value="Unchecked"${value === "Unchecked" ? " selected" : ""}>Unchecked</option>
+                                <option value="Fixed"${value === "Fixed" ? " selected" : ""}>Fixed</option>
+                            </select>
+                            </div>`;
+            } else if (key === "Justification for Invite") {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <textarea class="popup-input" data-field="${key}" rows="4" style="width: 100%;">${value}</textarea>
+                            </div>`;
+            } else {
+                contents += `<div><strong>${column.title}:</strong> 
+                            <input type="text" class="popup-input" data-field="${key}" value="${value}" />
+                            </div>`;
+            }
+        }
+    });
+*/
+    contents += "</div>";
+
+    const exitButton = document.createElement("button");
+    exitButton.innerHTML = "X";
+    exitButton.style.position = "absolute";
+    exitButton.style.top = "10px";
+    exitButton.style.right = "10px";
+    exitButton.style.backgroundColor = "blue";
+    exitButton.style.color = "white";
+    exitButton.style.border = "none";
+    exitButton.style.borderRadius = "50%";
+    exitButton.style.cursor = "pointer";
+    exitButton.id = "exit-button";
+
+    container.appendChild(exitButton);
+    container.innerHTML += contents;
+    container.style.position = "fixed";
+    container.style.top = "50%";
+    container.style.left = "50%";
+    container.style.transform = "translate(-50%, -50%)";
+    container.style.padding = "20px";
+    container.style.border = "1px solid #ddd";
+    container.style.backgroundColor = "#fff";
+    container.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1)";
+    container.style.borderRadius = "4px";
+    container.style.maxWidth = "600px";
+    container.style.maxHeight = "80%";
+    container.style.overflowY = "auto";
+    container.style.zIndex = "1000";
+    container.id = "row-popup";
+
+    document.body.appendChild(container);
+
+    document.getElementById("exit-button").onclick = function() {
+        container.remove();
+        var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
+        if (previousHighlightedRow) {
+            previousHighlightedRow.style.backgroundColor = "";
+        }
+    };
+
+    // Attach event listeners to input elements for inline editing
+    const inputs = container.querySelectorAll('.popup-input');
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const field = this.getAttribute('data-field');
+            let newValue = this.value;
+            console.log(`Updating field ${field} to ${newValue}`);
+
+            if (field === "Link to Publications" || field === "DOI of Best Match Paper") {
+                newValue = `https://${newValue.replace(/^https?:\/\//, '')}`;
+            }
+
+            row.update({ [field]: newValue });
+
+            // Optionally, update Airtable directly from here
+            const recordId = row.getData().id;
+            updateAirtable(recordId, field, newValue);
+        });
+    });
+
+    // Toggle between displaying the link and input field on double-click or right-click
+    const editableLinks = container.querySelectorAll('.editable-link');
+    editableLinks.forEach(linkContainer => {
+        const link = linkContainer.querySelector('a');
+        const input = linkContainer.querySelector('input');
+
+        link.addEventListener('click', function(event) {
+            // Open link in new tab
+            window.open(link.href, '_blank');
+        });
+
+        link.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            link.style.display = 'none';
+            input.style.display = 'inline-block';
+            input.focus();
+        });
+
+        input.addEventListener('blur', function() {
+            const newValue = input.value;
+            const url = newValue.startsWith("https") ? newValue : `http://${newValue}`;
+            link.href = url;
+            link.textContent = newValue.length > 30 ? newValue.substring(0, 30) + "..." : newValue;
+            input.style.display = 'none';
+            link.style.display = 'inline';
+        });
+
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                input.blur();
+            }
+        });
+    });
+}
+
+
+                
+
+
+
+
+
+
+
+        function expandViewButtonFormatter(cell, formatterParams, onRendered) {
+            var button = document.createElement("button");
+            button.innerHTML = "Expand View";
+            button.style.backgroundColor = "#4ebdd2";
+            button.style.color = "white";
+            button.style.border = "none";
+            button.style.borderRadius = "4px";
+            button.style.cursor = "pointer";
+            button.onclick = function() {
+                var previousHighlightedRow = document.querySelector(".tabulator-row[style*='rgba(78, 189, 210, 0.5)']");
+                if (previousHighlightedRow) {
+                    previousHighlightedRow.style.backgroundColor = "";
+                }
+                var currentRowElement = cell.getRow().getElement();
+                currentRowElement.style.backgroundColor = "rgba(78, 189, 210, 0.5)";
+                rowPopupFormatter(cell.getRow());
+            };
+            return button;
+        }
+       
+// Custom group header formatter to color based on "Urgent" status
+function customGroupHeader(value, count, data, group) {
+    const isUrgent = data.some(row => {
+        const urgent = row["Urgent"];
+        return Array.isArray(urgent) ? urgent.includes("Yes") || urgent.includes(true) : urgent === "Yes" || urgent === true;
+    });
+
+    const preprintTitle = data[0]["Preprint Title"];
+    const domain = data[0]["Domain"];
+    const inviteCount = data[0]["Invite Count"];
+    console.log("Invite COunt: " + inviteCount);
+
+    // Return the formatted group header
+    return `<span style="display: inline-block; padding: 5px; ${isUrgent ? 'background-color: rgba(255, 0, 0, 0.3); color: black;' : 'color: black;'}">
+                ${domain}, ${count} items, ${inviteCount} invites, - ${preprintTitle}
+            </span>`;
+}
+// Function to highlight rows with "Duplicate Domain" checked
+function highlightDuplicateDomains() {
+    const rows = table.getRows();
+/*
+     Highlight rows with "Duplicate Domain" checked
+    rows.forEach(row => {
+        const duplicateDomain = row.getData()["Duplicate Domain"];
+        const rowElement = row.getElement();
+        if (duplicateDomain) {
+            rowElement.style.backgroundColor = "rgba(255, 165, 0, 0.3)"; // Light orange color
+        } else {
+            rowElement.style.backgroundColor = ""; // Reset to default
+        }
+    });
+*/
+     //highlight duplicate domain and invite backup
+            rows.forEach(row => {
+                const duplicateDomain = row.getData()["Duplicate Domain"];
+                const invitedforOtherPreprint = row.getData()["Invited for Other Preprint"];
+                const shouldNotBeInviteBackup = row.getData()["Should not be backup"];
+                const rowElement = row.getElement();
+                //green lit else where:  rowElement.style.backgroundColor = "rgba(240, 128, 128, 0.3)"; // Light coral for duplicate domain
+                if (shouldNotBeInviteBackup) {
+                    rowElement.style.backgroundColor = "rgba(255, 165, 0, 0.3)"; // Light orange
+                   
+                } else if (duplicateDomain) {
+                    rowElement.style.backgroundColor = "rgba(221, 160, 221, 0.3)"; // Light purple (lavender) with transparency
+
+                   
+                }else if (invitedforOtherPreprint) {
+                    rowElement.style.backgroundColor = "rgba(240, 128, 128, 0.3)"; // Light coral if invited elsewhere
+
+                   
+                } else {
+                    rowElement.style.backgroundColor = ""; // Reset to default
+                }
+            });
+}
+
+
+        fetchData().then(data => {
+            console.log('Fetched data:', data);
+            
+
+            const columns = [
+                { title: "Expand View", field: "expandView", formatter: expandViewButtonFormatter, width: 100, headerSort: false, width: "fitData" },
+                /*{
+                    title: "Status",
+                    field: "Status",
+                    editor: "list",
+                    editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
+                    headerFilter: "list",
+                    headerFilterParams: {
+                        values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
+                        multiselect: true,
+                        multiselectFilter: true,
+                    },
+                    headerFilterFunc: customMultiSelectFilter,
+                    width: "fitData",
+                    headerSort: false
+                },*/
+                {
+                    title: "Status",
+                    field: "Status",
+                    editor: "list",
+                    editorParams: { values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"] },
+                    headerFilter: "list",
+                    headerFilterParams: {
+                        values: ["Invite", "Invite Backup", "Double Check", "Reject", "Fixable", "Unchecked", "Fixed"],
+                        multiselect: true,
+                        multiselectFilter: true,
+                    },
+                    headerFilterFunc: customMultiSelectFilter,
+                    width: "fitData",
+                    headerSort: false,
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        var color = "";
+                
+                        switch (value) {
+                            case "Invite":
+                                color = "rgba(0, 255, 0, 0.3)"; // Green
+                                break;
+                            case "Fixable":
+                                color = "rgba(255, 165, 0, 0.6)"; // Orange
+                                break;
+                            case "Fixed":
+                                color = "rgba(255, 69, 0, 0.8)"; // Blood Orange for Fixed
+                                break;
+                            case "Invite Backup":
+                                color = "rgba(0, 255, 128, 0.3)"; // Teal
+                                break;
+                            case "Double Check":
+                                color = "rgba(255, 255, 0, 0.6)"; // Yellow
+                                break;
+                            case "Reject":
+                                color = "rgba(255, 0, 0, 0.6)"; // Red
+                                break;
+                            case "Unchecked":
+                                color = "rgba(192, 192, 192, 0.6)"; // Grey
+                                break;
+                            default:
+                                color = ""; // No color
+                                break;
+                        }
+                
+                        cell.getElement().style.backgroundColor = color;
+                        return value;
+                    }
+                },
+                { title: "Quality Check Reviewer Comments", field: "Quality Check Reviewer Comments" },
+                { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData"  },
+                { title: "Reviewer First Name", field: "First Name (Proposed Reviewer)" },
+                { title: "Reviewer Last Name", field: "Last Name (Proposed Reviewer)" },
+                { title: "Reviewer Email", field: "Reviewer Email" },
+                { title: "Backup Reviewer?", field: "Backup Reviewer?" },
+                { title: "Invite Backup For...", field: "Invite Backup For..." },
+                { title: "Justification Should not be Backup", field: "Justification Should not be Backup" },
+       
+                { title: "Affiliation", field: "Affiliation" },
+                { title: "Secondary Affiliation", field: "Secondary Affiliation" },
+                { title: "Highest Degree", field: "Highest Degree", editor: "list",
+                    editorParams: { values: ["PhD", "DrPH", "MD", "MBBS", "JD", "EdD", "DO"] },
+                },
+                { title: "Other Degree", field: "Other Degree" },
+                { title: "Title", field: "Title", editor: "list",
+                    editorParams: { values: ["Professor", "Associate Professor", "Assistant Professor", "Research Associate Professor", "Director", "Department Head", "Researcher", "Research Officer"] },
+                 },
+                { 
+                    title: "Link to Profile", 
+                    field: "Link to Profile",
+                    width: 200,
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        if (value && typeof value === 'string' && value.startsWith("https")) {
+                            var url = value.startsWith("https") ? value : `http://${value}`;
+                            var displayText = value.length > 30 ? value.substring(0, 30) + "..." : value;
+                            return `<a href="${url}" target="_blank">${displayText}</a>`;
+                        } else {
+                            return value || "";
+                        }
+                    } 
+                },
+                { title: "Justification for Non-Institutional Profile", field: "Justification for Non-Institutional Profile" },
+                { title: "Subdiscipline", field: "Subdiscipline" },
+                { 
+                    title: "Link to Publications", 
+                    field: "Link to Publications",
+                    width: 200,
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        if (value && typeof value === 'string' && value.startsWith("https")) {
+                            var url = value.startsWith("https") ? value : `http://${value}`;
+                            var displayText = value.length > 30 ? value.substring(0, 30) + "..." : value;
+                            return `<a href="${url}" target="_blank">${displayText}</a>`;
+                        } else {
+                            return value || "";
+                        }
+                    } 
+                },
+                { title: "Justification if Link to Publications Not Pubmed", field: "Justification if Publications not Pubmed" },
+                { 
+                    title: "Link to Best Match Paper", 
+                    field: "DOI of Best Match Paper", 
+                    width: 200,
+                    formatter: function(cell, formatterParams, onRendered) {
+                        var value = cell.getValue();
+                        if (value && typeof value === 'string' && value.startsWith("https")) {
+                            var url = value.startsWith("https") ? value : `http://${value}`;
+                            var displayText = value.length > 30 ? value.substring(0, 30) + "..." : value;
+                            return `<a href="${url}" target="_blank">${displayText}</a>`;
+                        } else {
+                            return value || "";
+                        }
+                    } 
+                },
+                { title: "Justification for Invite", field: "Justification for Invite" },
+                { title: "Student", field: "Student" },
+                { title: "Student Email", field: "Student Email" },
+                { title: "Email of Quality Checker", field: "Email of Quality Checker" },
+                { title: "Date of Proposal", field: "Date of Proposal" },
+                { title: "Date of Quality Check", field: "Date of Quality Check" },
+                { title: "Preprint Status", field: "Preprint Status (from Preprint Info ONLY)" },
+                { title: "Urgent", field: "Urgent" },
+                { title: "Duplicate Domain", field: "Duplicate Domain"},
+            ];
+            console.log('Column Definitions:', columns);
+
+        // Calculate total width of all columns
+        const totalWidth = columns.reduce((sum, column) => {
+            const columnWidth = column.width === "fitData" ? 150 : (parseInt(column.width) || 150);
+            console.log(`Column: ${column.title}, Width: ${columnWidth}`);
+            return sum + columnWidth;
+        }, 0);
+
+
+        // Set the width of the table container
+        const tableElement = document.getElementById('example-table');
+        tableElement.style.width = `${totalWidth}px`;
+        //console.log("Set width of table container: " + tableElement.style.width);
+        
+
+            // Make all fields editable except the "Status" column which has specific settings
+            const editableColumns = columns.map(col => {
+                if (col.field !== "Status" && col.field !== "expandView" && col.field !== "Quality Check Reviewer Comments") {
+                    return { ...col, editor: "input", headerSort: false, width: "fitData" };
+                }
+                return col;
+            });
+
+            table = new Tabulator("#example-table", {
+                data: data, // Load row data into Tabulator
+                columns: editableColumns, // Define table columns
+                height: "100%",
+                layout: "fitDataTable",
+                groupBy: "preprintId", // Group rows by Preprint ID
+                groupStartOpen: false, // Start with groups collapsed
+                
+                initialSort: [
+                    { column: "Date of Proposal", dir: "asc" }
+                ],
+                groupHeader: customGroupHeader, 
+                
+                groupToggleElement: "header", // Allow toggling by clicking the group header
+            });
+        // Color the group headers based on "Urgent"
+function colorUrgentGroupHeaders() {
+    console.log("Running colorUrgentGroupHeaders function");
+
+    // First, reset all group headers to the default background color
+    table.getGroups().forEach(group => {
+        const groupElement = group.getElement();
+        groupElement.style.backgroundColor = ""; // Reset to default
+    });
+
+    // Then, apply the color to the "Urgent" groups
+    table.getGroups().forEach(group => {
+        const rows = group.getRows();
+        const urgent = rows.some(row => {
+            const data = row.getData()["Urgent"];
+            const name = row.getData()["Preprint Title"];
+            console.log("Urgent data for row:", name, data);
+            return Array.isArray(data) ? data.includes("Yes") || data.includes(true) : data === "Yes" || data === true;
+        });
+
+        const groupElement = group.getElement();
+        if (urgent) {
+            console.log(`Coloring group header for group ${group.getKey()}`);
+            console.log("Group element before coloring:", groupElement);
+            groupElement.style.backgroundColor = "rgba(255, 0, 0, 0.3)"; // Translucent red color
+            console.log("Group element after coloring:", groupElement);
+        }
+    });
+}
+
+// Function to handle group header click events with basic logging
+function addGroupHeaderClickListener() {
+    const groupHeaders = document.querySelectorAll('.tabulator-group-header');
+    groupHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            console.log("Group header clicked:", header);
+        });
+    });
+}
+
+table.on("tableBuilt", function() {
+        console.log("Table built");
+        updateTableFilter(); // Call updateTableFilter after table is built
+        preloadStatusFilter();
+        colorUrgentGroupHeaders();
+        highlightDuplicateDomains();
+        addGroupHeaderClickListener(); // Add click listeners to group headers
+    });
+
+    table.on("dataFiltered", function() {
+        console.log("Data filtered");
+        colorUrgentGroupHeaders();
+        highlightDuplicateDomains();
+    });
+
+    table.on("dataLoaded", function() {
+        console.log("Data loaded");
+        colorUrgentGroupHeaders();
+        highlightDuplicateDomains();
+    });
+
+    table.on("dataChanged", function() {
+        console.log("Data changed");
+        colorUrgentGroupHeaders();
+        highlightDuplicateDomains();
+    });
+
+            table.on("cellEditing", async function(cell) {
+                const row = cell.getRow();
+                const recordId = row.getData().id;
+                const latestData = await fetchRowData(recordId);
+                let dataChanged = false;
+                const currentData = row.getData();
+                const columns = table.getColumnDefinitions();
+                
+                for (const column of columns) {
+                    const field = column.field;
+                    const editor = column.editor;
+                    if (editor && currentData[field] !== undefined) {
+                        const currentValue = currentData[field];
+                        const latestValue = latestData[field];
+                        if (typeof currentValue === 'object' || typeof latestValue === 'object') {
+                            if (JSON.stringify(currentValue) !== JSON.stringify(latestValue)) {
+                                dataChanged = true;
+                                console.log(`Data changed for field "${field}": current value = ${JSON.stringify(currentValue)}, latest value = ${JSON.stringify(latestValue)}`);
+                            }
+                        } else if (currentValue !== latestValue) {
+                            dataChanged = true;
+                            console.log(`Data changed for field "${field}": current value = ${currentValue}, latest value = ${latestValue}`);
+                        }
+                    }
+                }
+                if (dataChanged) {
+                    row.update(latestData);
+                }
+            });
+
+            table.on("cellEdited", function(cell) {
+                const row = cell.getRow();
+                const rowIndex = row.getPosition();
+                const fieldName = cell.getColumn().getField();
+                const recordId = row.getData().id;
+                const preprintId = row.getData().preprintId;
+                const previousValue = cell.getOldValue();
+                const currentValue = cell.getValue();
+                const logMessage = `
+                    Cell edited at row ${rowIndex}
+                    Field Name: ${fieldName}
+                    Record Id: ${recordId}
+                    Preprint Id: ${preprintId}
+                    Previous value: ${previousValue}
+                    Current value: ${currentValue}
+                `;
+                console.log(logMessage);
+                updateAirtable(recordId, fieldName, currentValue);
+            });
+        }).catch(error => {
+            console.error('Error fetching data from Airtable:', error);
+        });
+
+                
+        // Add event listeners to filter buttons
+        document.querySelectorAll('.filter-button-domain').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
+                    this.style.backgroundColor = 'white'; // deselect
+                    this.style.color = '#4ebdd2';
+                    this.style.border = '2px solid #4ebdd2';
+                } else {
+                    this.style.backgroundColor = '#4ebdd2'; // select
+                    this.style.color = 'white';
+                    this.style.border = 'none';
+                }
+                updateTableFilter();
+            });
+        });
+        // Select "ON HOLD" and "ACTIVE" buttons by default
+        document.querySelectorAll('.filter-button-preprint-status[data-status="ON HOLD"], .filter-button-preprint-status[data-status="ACTIVE"]').forEach(button => {
+            button.style.backgroundColor = '#4ebdd2';
+            button.style.color = 'white';
+            button.style.border = 'none';
+            updateTableFilter();
+        });
+        
+
+        document.querySelectorAll('.filter-button-preprint-status').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.style.backgroundColor === 'rgb(78, 189, 210)') { // if already selected
+                    this.style.backgroundColor = 'white'; // deselect
+                    this.style.color = '#4ebdd2';
+                    this.style.border = '2px solid #4ebdd2';
+                } else {
+                    this.style.backgroundColor = '#4ebdd2'; // select
+                    this.style.color = 'white';
+                    this.style.border = 'none';
+                }
+                updateTableFilter();
+            });
+        });
+
+
+// Function to update the table filter based on selected buttons
+function updateTableFilter() {
+    const selectedDomains = Array.from(document.querySelectorAll('.filter-button-domain'))
+                                .filter(button => button.style.backgroundColor === 'rgb(78, 189, 210)')
+                                .map(button => button.getAttribute('data-domain'));
+
+    const selectedPreprintStatuses = Array.from(document.querySelectorAll('.filter-button-preprint-status'))
+                                .filter(button => button.style.backgroundColor === 'rgb(78, 189, 210)')
+                                .map(button => button.getAttribute('data-status'));
+    console.log('Selected domains:', selectedDomains);
+                                
+    console.log('Selected preprint statuses:', selectedPreprintStatuses);
+
+    if (table) { // Ensure table is defined
+        table.clearFilter(true); // clear existing filters but retain header filters
+
+        if (selectedDomains.length > 0) {
+            table.addFilter(function(data) {
+                const domains = data["Domain"];
+                if (Array.isArray(domains)) {
+                    return domains.some(domain => selectedDomains.includes(domain));
+                }
+                return selectedDomains.includes(domains);
+            });
+        }
+
+        if (selectedPreprintStatuses.length > 0) {
+            table.addFilter(function(data) {
+                const preprintStatus = data["Preprint Status (from Preprint Info ONLY)"];
+                if (Array.isArray(preprintStatus)) {
+                    return preprintStatus.some(status => selectedPreprintStatuses.includes(status));
+                }
+                return selectedPreprintStatuses.includes(preprintStatus);
+            });
+        }
+        
+    }
+
+}
+
+
+
+    </script>
+</body>
+</html>
