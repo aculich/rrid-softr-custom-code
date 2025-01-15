@@ -1,0 +1,401 @@
+
+
+//REFEREE VERSION: 
+<script>
+window.addEventListener("load", function () {
+  setTimeout(async function () {
+    console.log("Page loaded, initializing script...");
+
+    function getUrlParam(name) {
+      const url = new URL(window.location.href);
+      let param;
+      for (var key of url.searchParams.keys()) {
+        if (key.toLowerCase() === name.toLowerCase()) {
+          param = url.searchParams.get(name);
+          break;
+        }
+      }
+
+      if (!param && name.toLowerCase() === 'recordid') {
+        param = getRecordIdFromPath();
+      }
+      return param;
+    }
+
+    function getRecordIdFromPath() {
+      let pathName = window.location.pathname;
+      if (pathName.indexOf('/r/rec') !== -1) {
+        pathName = pathName.substr(pathName.indexOf('/r/rec') + 3);
+        if (pathName.indexOf("/") !== -1) {
+          pathName = pathName.substring(0, pathName.indexOf('/'))
+        }
+        return pathName;
+      }
+      return undefined;
+    }
+
+    async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        if (retries > 0) {
+          console.warn(`Retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchWithRetry(url, options, retries - 1, delay * 2);
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    async function fetchPreprintId(recordId) {
+      const apiUrl = `https://api.airtable.com/v0/appAYosfmfSuHWiBT/tblzqocWVmZV6fwWX/${recordId}`;
+      const apiKey = 'patbdOU2kaEyFmjSo.807eb700fe139fe032e80e34e0e10b7bc301c95efc3e79006fe3acd6a818268d';
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const preprintId = data.fields['Preprint ID'];
+          console.log('Fetched Preprint ID:', preprintId);
+          return preprintId;
+        } else {
+          const errorData = await response.json();
+          console.error('Failed to fetch Preprint ID', response.status, response.statusText, errorData);
+          return null;
+        }
+      } catch (error) {
+        console.error('Error fetching Preprint ID', error);
+        return null;
+      }
+    }
+
+    const recordId = getUrlParam('recordId');
+    console.log("Record ID from URL:", recordId);
+
+    if (!recordId) {
+      console.error("Record ID not found. Please ensure the URL has a valid recordId parameter.");
+      return;
+    }
+
+    //const submitButton = document.querySelector('button.nw87ex7.nw87ex8[data-testid="button"]');
+    
+    const submitButton = document.querySelector('button.e9e5011_nw87ex8[data-testid="button"]');
+    
+    const reviewerEmailInput = document.querySelector('input[name="6a000ec7-f4fd-41fc-8971-f039d287af6c"]');
+    const validationMessage = document.getElementById("validation-message");
+    const backupCheckbox = document.querySelector('input[type="checkbox"][name="94fbd810-f84f-4564-bb30-a80287811fb4"]');
+
+    console.log("Elements selected:", { submitButton, reviewerEmailInput, validationMessage, backupCheckbox });
+
+    if (submitButton) {
+      submitButton.style.pointerEvents = "none";
+      submitButton.style.opacity = "0.5";
+      console.log("Next button made unclickable");
+    } else {
+      console.log("Next button not found");
+    }
+
+
+    //form valid version: 
+     const submitButton = document.querySelector('button[data-testid="button"][data-loading="false"][data-disabled="false"]');
+    
+    const reviewerFirstNameInput = document.querySelector('input[name="id-field1"]');
+    const reviewerLastNameInput = document.querySelector('input[name="47b08f44-d43d-404c-9aa5-6df43401ddae"]');
+    const reviewerEmailInput = document.querySelector('input[name="6a000ec7-f4fd-41fc-8971-f039d287af6c"]');
+    const validationMessage = document.getElementById("validation-message");
+    const backupCheckbox = document.querySelector('input[name="94fbd810-f84f-4564-bb30-a80287811fb4"]'); // Invite Backup checkbox
+    const affiliationInput = document.querySelector('input[name="b799f9c8-2f86-493c-99e0-8b666c32ae3a"]'); // Selecting the Affiliation input field based on the provided HTML
+    const affiliationCheckbox = document.querySelector('input[name="31c57c74-398e-41e0-911c-f9f577a29f30"]');
+    console.log("Elements selected:", { submitButton, reviewerFirstNameInput, reviewerLastNameInput, reviewerEmailInput, validationMessage, backupCheckbox, affiliationInput });
+
+
+    if (submitButton) {
+      submitButton.style.pointerEvents = "none";
+      submitButton.style.opacity = "0.5";
+      console.log("Next button made unclickable");
+    } else {
+      console.log("Next button not found");
+    }
+
+    const apiKey = 'patbdOU2kaEyFmjSo.807eb700fe139fe032e80e34e0e10b7bc301c95efc3e79006fe3acd6a818268d';
+    const baseID = 'appAYosfmfSuHWiBT';
+
+    let authorsFromArticle = [];
+    let recentReviewers = [];
+    let proposedAuthors = [];
+    let proposedAffiliations = [];
+    let affiliationsFromArticle = [];
+
+    try {
+      authorsFromArticle = await fetchAuthorsFromArticle('tbldJ5yPV3HeBsCKq', 'Authors (from Selected)', recordId);
+      console.log("Fetched authors from article:", authorsFromArticle);
+    } catch (error) {
+      console.error("Error fetching authors from article:", error);
+    }
+    
+    try {
+      affiliationsFromArticle = await fetchAffiliationsFromArticle('tbldJ5yPV3HeBsCKq', 'Affiliations (from Selected)', recordId);
+      console.log("Fetched affiliations from article:", affiliationsFromArticle);
+    } catch (error) {
+      console.error("Error fetching affiliations from article:", error);
+    }
+
+
+    try {
+      recentReviewers = await fetchRecentReviewers('tbl6Dx2qqCxGvv2u0');
+      console.log("Fetched recent reviewers:", recentReviewers);
+    } catch (error) {
+      console.error("Error fetching recent reviewers:", error);
+    }
+
+    try {
+      proposedAuthors = await fetchProposedAuthors('tblHRiK0758oaO4jI', "First Name (Proposed Reviewer)", "Last Name (Proposed Reviewer)", recordId);
+      console.log("Fetched proposed authors:", proposedAuthors);
+    } catch (error) {
+      console.error("Error fetching proposed authors:", error);
+    }
+    
+
+    try {
+      proposedAffiliations = await fetchProposedAffiliations('tblHRiK0758oaO4jI', "Affiliation", recordId);
+      console.log("Fetched proposed affiliations:", proposedAffiliations);
+    } catch (error) {
+      console.error("Error fetching proposed affiliations:", error);
+    }
+
+    if (reviewerEmailInput) {
+      reviewerEmailInput.addEventListener("input", validateAuthorInput);
+    }
+    
+    if (affiliationInput) {
+      affiliationInput.addEventListener("input", validateAuthorInput);
+      console.log("tracking input for affiliation");
+    }
+    
+    if (backupCheckbox) {
+      backupCheckbox.addEventListener("change", validateAuthorInput);
+    }
+    
+     if (affiliationCheckbox) {
+      affiliationCheckbox.addEventListener("change", validateAuthorInput);
+    }
+
+
+            
+
+    async function validateAuthorInput() {
+      
+      
+      const affiliation = affiliationInput ? affiliationInput.value.trim().toLowerCase() : '';
+      const emailDomain = reviewerEmail.split('@')[1];
+      const isBackupChecked = backupCheckbox.checked;
+      const affiliationChecked = affiliationCheckbox.checked;
+      console.log("Validating reviewer email:", reviewerEmail);
+      console.log("Email domain:", emailDomain);
+      console.log("Backup checkbox checked:", isBackupChecked);
+
+      let isValid = true;
+      let errorMessage = "";
+      
+      // List of keywords to exclude from duplicate domain check
+      const excludedDomainsKeywords = ["gmail", "yahoo", "hotmail", "aol"];
+    
+      // Function to check if email domain contains any of the excluded keywords
+      const isExcludedDomain = excludedDomainsKeywords.some(keyword => emailDomain.includes(keyword));
+
+    
+      if (reviewerEmail === "" || !validateEmail(reviewerEmail)) {
+        isValid = false;
+      } else {
+         if (recentReviewers.some(reviewer => reviewer.email === reviewerEmail)) {
+          errorMessage = "The reviewer is a recent reviewer. Please reject this suggested reviewer and in the justification write \"Recent Reviewer\"";
+          isValid = false;
+        } else if (proposedAuthors.some(author => author.email === reviewerEmail)) {
+          errorMessage = "The reviewer has already been proposed.";
+          isValid = false;
+        }else if (!isExcludedDomain) { // Check if it's not an excluded domain
+          const matchingProposedAuthors = proposedAuthors.filter(author => author.email && author.email.split('@')[1] === emailDomain);
+          if (matchingProposedAuthors.length > 0 && !isBackupChecked) {
+            const matchingNames = matchingProposedAuthors.map(author => `${author.firstName} ${author.lastName}`).join(', ');
+            errorMessage = `The reviewer email domain "${emailDomain}" matches proposed reviewers: ${matchingNames}. Please check 'Invite Backup' to proceed.`;
+            isValid = false;
+          } else {
+            errorMessage = "";
+          }
+        } else {
+          errorMessage = "";
+        }
+      }
+
+      validationMessage.innerText = errorMessage;
+      validationMessage.style.color = "#de350b";
+      validationMessage.style.display = isValid ? "none" : "block";
+
+      if (submitButton) {
+        if (isValid) {
+          submitButton.style.pointerEvents = "auto";
+          submitButton.style.opacity = "1";
+          console.log("Next button made clickable");
+        } else {
+          submitButton.style.pointerEvents = "none";
+          submitButton.style.opacity = "0.5";
+          console.log("Next button made unclickable again");
+        }
+      }
+    }
+
+    function validateEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(String(email).toLowerCase());
+    }
+
+async function fetchRecentReviewers(tableID) {
+  const url = `https://api.airtable.com/v0/${baseID}/${tableID}`;
+  let allRecords = [];
+  let offset = null;
+
+  try {
+    do {
+      let requestUrl = offset ? `${url}?offset=${offset}` : url;
+
+      const data = await fetchWithRetry(requestUrl, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`
+        }
+      });
+
+      const records = data.records;
+
+      records.forEach(record => {
+        const email = record.fields['Email'] ? record.fields['Email'].toLowerCase() : null;
+        const firstName = record.fields['Reviewer First Name'] ? record.fields['Reviewer First Name'].toLowerCase() : null;
+        const lastName = record.fields['Reviewer Last Name'] ? record.fields['Reviewer Last Name'].toLowerCase() : null;
+
+        allRecords.push({
+          email,
+          firstName,
+          lastName
+        });
+      });
+
+      // Check if there's more data (pagination)
+      offset = data.offset;
+
+    } while (offset);
+
+    return allRecords;
+
+  } catch (error) {
+    console.error("Error fetching recent reviewers:", error);
+  }
+}
+
+
+
+
+
+
+
+
+
+async function fetchAffiliationsFromArticle(tableID, fieldName, articleID) {
+    const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula={fld0UM61RLQ1PHPH3}='${articleID}'`;
+    try {
+      const data = await fetchWithRetry(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`
+        }
+      });
+      console.log("Fetched affiliations from article:", data);
+  
+      const formattedAffiliations = data.records.flatMap(record => {
+        const affiliationsStringArray = record.fields[fieldName];
+        console.log(`Affiliations field for record ${record.id}:`, affiliationsStringArray);
+  
+        if (Array.isArray(affiliationsStringArray) && affiliationsStringArray.length > 0) {
+          const affiliationsString = affiliationsStringArray[0]; // Get the affiliation string
+          
+          if (affiliationsString.includes(';')) {
+            // Affiliation format using semicolons and possibly numbers
+            return parseAffiliations(affiliationsString);
+          } else {
+            // Affiliation format using only commas
+            return affiliationsString.split(',').map(aff => aff.trim().toLowerCase());
+          }
+        } else {
+          return [];
+        }
+      });
+  
+      console.log("Formatted affiliations:", formattedAffiliations);
+      return formattedAffiliations;
+    } catch (error) {
+      console.error("Error fetching affiliations:", error);
+      return [];
+    }
+  }
+  function parseAffiliations(affiliationsString) {
+    const affiliations = [];
+  
+    // Split by semicolons (indicating multiple affiliations)
+    const parts = affiliationsString.split(';').map(aff => aff.trim());
+  
+    parts.forEach(part => {
+      if (part.match(/^\d/)) {
+        // Numbered affiliation (e.g., '1 Department of Viroscience, Erasmus University Medical Center...')
+        const numberlessPart = part.replace(/^\d+/, '').trim(); // Remove leading number
+        affiliations.push(numberlessPart.toLowerCase());
+      } else {
+        // Non-numbered affiliation (e.g., 'Harvard Business School, University of Southern California')
+        affiliations.push(part.toLowerCase());
+      }
+    });
+  
+    return affiliations;
+  }
+  
+
+
+    async function fetchProposedAuthors(tableID, firstNameField, lastNameField, preprintId) {
+      const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula={Preprint ID (pulled)}='${preprintId}'`;
+      try {
+        const data = await fetchWithRetry(url, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`
+          }
+        });
+        console.log("Fetched proposed authors:", data);
+
+        // Check if the response has records and log detailed information
+        if (data.records && data.records.length > 0) {
+          return data.records.map(record => {
+            const firstName = record.fields[firstNameField];
+            const lastName = record.fields[lastNameField];
+            const email = record.fields['Reviewer Email']; // Corrected field name
+            console.log(`Proposed author record ${record.id} - First name: ${firstName}, Last name: ${lastName}, Email: ${email}`);
+            return { firstName: firstName ? firstName.toLowerCase() : undefined, lastName: lastName ? lastName.toLowerCase() : undefined, email: email ? email.toLowerCase() : undefined };
+          });
+        } else {
+          console.log("No records found for proposed authors.");
+          return [];
+        }
+      } catch (error) {
+        console.error("Error fetching proposed authors:", error);
+        return [];
+      }
+    }
+
+  }, 100);
+});
+</script>

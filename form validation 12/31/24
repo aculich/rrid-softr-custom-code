@@ -1,0 +1,475 @@
+<script>
+window.addEventListener("load", function () {
+  // Trigger your main logic after a short delay when the page loads
+  
+  setTimeout(async function () {
+    console.log("Page loaded, initializing script...");
+
+    function getUrlParam(name) {
+      const url = new URL(window.location.href);
+      let param;
+      for (var key of url.searchParams.keys()) {
+        if (key.toLowerCase() === name.toLowerCase()) {
+          param = url.searchParams.get(name);
+          break;
+        }
+      }
+
+      if (!param && name.toLowerCase() === 'recordid') {
+        param = getRecordIdFromPath();
+      }
+      return param;
+    }
+
+    function getRecordIdFromPath() {
+      let pathName = window.location.pathname;
+      if (pathName.indexOf('/r/rec') !== -1) {
+        pathName = pathName.substr(pathName.indexOf('/r/rec') + 3);
+        if (pathName.indexOf("/") !== -1) {
+          pathName = pathName.substring(0, pathName.indexOf('/'))
+        }
+        return pathName;
+      }
+      return undefined;
+    }
+
+    async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        if (retries > 0) {
+          console.warn(`Retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchWithRetry(url, options, retries - 1, delay * 2);
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    const recordId = getUrlParam('recordId');
+    console.log("Record ID from URL:", recordId);
+
+    if (!recordId) {
+      console.error("Record ID not found. Please ensure the URL has a valid recordId parameter.");
+      return;
+    }
+
+    const apiKey = 'patbdOU2kaEyFmjSo.807eb700fe139fe032e80e34e0e10b7bc301c95efc3e79006fe3acd6a818268d';
+    const baseID = 'appAYosfmfSuHWiBT';
+
+    let authorsFromArticle = [];
+    let recentReviewers = [];
+    let proposedAuthors = [];
+    let proposedAffiliations = [];
+    let affiliationsFromArticle = [];
+
+    try {
+      authorsFromArticle = await fetchAuthorsFromArticle('tbldJ5yPV3HeBsCKq', 'Authors (from Selected)', recordId);
+      console.log("Fetched authors from article:", authorsFromArticle);
+    } catch (error) {
+      console.error("Error fetching authors from article:", error);
+    }
+    
+    try {
+      affiliationsFromArticle = await fetchAffiliationsFromArticle('tbldJ5yPV3HeBsCKq', 'Affiliations (from Selected)', recordId);
+      console.log("Fetched affiliations from article:", affiliationsFromArticle);
+    } catch (error) {
+      console.error("Error fetching affiliations from article:", error);
+    }
+
+
+    try {
+      recentReviewers = await fetchRecentReviewers('tbl6Dx2qqCxGvv2u0');
+      console.log("Fetched recent reviewers:", recentReviewers);
+    } catch (error) {
+      console.error("Error fetching recent reviewers:", error);
+    }
+
+    try {
+      proposedAuthors = await fetchProposedAuthors('tblHRiK0758oaO4jI', "First Name (Proposed Reviewer)", "Last Name (Proposed Reviewer)", recordId);
+      console.log("Fetched proposed authors:", proposedAuthors);
+    } catch (error) {
+      console.error("Error fetching proposed authors:", error);
+    }
+    
+
+    try {
+      proposedAffiliations = await fetchProposedAffiliations('tblHRiK0758oaO4jI', "Affiliation", recordId);
+      console.log("Fetched proposed affiliations:", proposedAffiliations);
+    } catch (error) {
+      console.error("Error fetching proposed affiliations:", error);
+    }
+    
+    
+async function fetchAffiliationsFromArticle(tableID, fieldName, articleID) {
+  const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula={fld0UM61RLQ1PHPH3}='${articleID}'`;
+  try {
+    const data = await fetchWithRetry(url, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`
+      }
+    });
+    console.log("Fetched affiliations from article:", data);
+
+    const formattedAffiliations = data.records.flatMap(record => {
+      const affiliationsStringArray = record.fields[fieldName];
+      console.log(`Affiliations field for record ${record.id}:`, affiliationsStringArray);
+
+      if (Array.isArray(affiliationsStringArray) && affiliationsStringArray.length > 0) {
+        const affiliationsString = affiliationsStringArray[0]; // Get the affiliation string
+        
+        if (affiliationsString.includes(';')) {
+          // Affiliation format using semicolons and possibly numbers
+          return parseAffiliations(affiliationsString);
+        } else {
+          // Affiliation format using only commas
+          return affiliationsString.split(',').map(aff => aff.trim().toLowerCase());
+        }
+      } else {
+        return [];
+      }
+    });
+
+    console.log("Formatted affiliations:", formattedAffiliations);
+    return formattedAffiliations;
+  } catch (error) {
+    console.error("Error fetching affiliations:", error);
+    return [];
+  }
+}
+function parseAffiliations(affiliationsString) {
+  const affiliations = [];
+
+  // Split by semicolons (indicating multiple affiliations)
+  const parts = affiliationsString.split(';').map(aff => aff.trim());
+
+  parts.forEach(part => {
+    if (part.match(/^\d/)) {
+      // Numbered affiliation (e.g., '1 Department of Viroscience, Erasmus University Medical Center...')
+      const numberlessPart = part.replace(/^\d+/, '').trim(); // Remove leading number
+      affiliations.push(numberlessPart.toLowerCase());
+    } else {
+      // Non-numbered affiliation (e.g., 'Harvard Business School, University of Southern California')
+      affiliations.push(part.toLowerCase());
+    }
+  });
+
+  return affiliations;
+}
+
+
+async function fetchAuthorsFromArticle(tableID, fieldName, articleID) {
+  const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula={fld0UM61RLQ1PHPH3}='${articleID}'`;
+  
+  try {
+    const data = await fetchWithRetry(url, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`
+      }
+    });
+
+    console.log("Fetched authors from article:", data);
+
+    const formattedAuthors = data.records.flatMap(record => {
+      const authorsStringArray = record.fields[fieldName];
+      console.log(`Authors field for record ${record.id}:`, authorsStringArray);
+
+      if (Array.isArray(authorsStringArray) && authorsStringArray.length > 0) {
+        // Extract the string containing all names
+        const authorsString = authorsStringArray[0].replace(/[\[\]']/g, ''); // Clean up any extra brackets/quotes
+        return parseAuthorList(authorsString); // Call the parser
+      } else {
+        return [];
+      }
+    });
+
+    console.log("Formatted authors:", formattedAuthors);
+    return formattedAuthors;
+
+  } catch (error) {
+    console.error("Error fetching authors:", error);
+    return [];
+  }
+}
+
+// Function to parse author list based on presence of semicolons and commas
+function parseAuthorList(authorsString) {
+  const authors = [];
+
+  // Check if there are semicolons
+  if (authorsString.includes(';')) {
+    const names = authorsString.split(';').map(name => name.trim());
+
+    names.forEach(name => {
+      if (name.includes(',')) {
+        // Last Name, First Initial structure
+        const [lastName, firstName] = name.split(',').map(part => part.trim());
+        authors.push({ firstName: firstName.toLowerCase(), lastName: lastName.toLowerCase(), isLastFirst: true });
+      } else {
+        // First Name Last Name structure
+        const nameParts = name.split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' '); // Remaining parts as last name
+        authors.push({ firstName: firstName.toLowerCase(), lastName: lastName.toLowerCase(), isLastFirst: false });
+      }
+    });
+  } else {
+    // Assume First Name Last Name structure with commas (if no semicolons)
+    const names = authorsString.split(',').map(name => name.trim());
+    names.forEach(name => {
+      const nameParts = name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ');
+      authors.push({ firstName: firstName.toLowerCase(), lastName: lastName.toLowerCase(), isLastFirst: false });
+    });
+  }
+  
+  return authors;
+}
+
+
+
+
+async function fetchRecentReviewers(tableID) {
+  const url = `https://api.airtable.com/v0/${baseID}/${tableID}`;
+  let allRecords = [];
+  let offset = null;
+
+  try {
+    do {
+      let requestUrl = offset ? `${url}?offset=${offset}` : url;
+
+      const data = await fetchWithRetry(requestUrl, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`
+        }
+      });
+
+      const records = data.records;
+
+      records.forEach(record => {
+        const email = record.fields['Email'] ? record.fields['Email'].toLowerCase() : null;
+        const firstName = record.fields['Reviewer First Name'] ? record.fields['Reviewer First Name'].toLowerCase() : null;
+        const lastName = record.fields['Reviewer Last Name'] ? record.fields['Reviewer Last Name'].toLowerCase() : null;
+
+        allRecords.push({
+          email,
+          firstName,
+          lastName
+        });
+      });
+
+      // Check if there's more data (pagination)
+      offset = data.offset;
+
+    } while (offset);
+
+    return allRecords;
+
+  } catch (error) {
+    console.error("Error fetching recent reviewers:", error);
+  }
+}
+
+
+async function fetchProposedAuthors(tableID, firstNameField, lastNameField, articleID) {
+      const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula={fldX3dPZao8v3vJO8}='${articleID}'`;
+      try {
+        const data = await fetchWithRetry(url, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`
+          }
+        });
+        console.log("Fetched proposed authors:", data);
+        return data.records.map(record => {
+          const firstName = record.fields[firstNameField];
+          const lastName = record.fields[lastNameField];
+          const email = record.fields['Reviewer Email']; 
+          //console.log(`Proposed author record ${record.id} - First name: ${firstName}, Last name: ${lastName}, Email: ${email}`);
+          return { firstName: firstName ? firstName.toLowerCase() : undefined, lastName: lastName ? lastName.toLowerCase() : undefined, email: email ? email.toLowerCase() : undefined };
+        });
+      } catch (error) {
+        console.error("Error fetching proposed authors:", error);
+        return [];
+      }
+    }
+    
+    async function fetchProposedAffiliations(tableID, affiliationField, articleID) {
+      const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula={fldX3dPZao8v3vJO8}='${articleID}'`;
+      try {
+        const data = await fetchWithRetry(url, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`
+          }
+        });
+        console.log("Fetched proposed affiliations:", data);
+        return data.records.map(record => {
+          const affiliation = record.fields[affiliationField];
+          
+          return affiliation ? affiliation.toLowerCase() : undefined;
+        }).filter(Boolean);
+      } catch (error) {
+        console.error("Error fetching proposed affiliations:", error);
+        return [];
+      }
+    }
+    
+    
+  initializeScript(authorsFromArticle, recentReviewers, proposedAuthors, proposedAffiliations, affiliationsFromArticle);
+
+  // Listen for a form submission or custom event
+  window.addEventListener('submit-form-success-form3', function () {
+    console.log('Custom event "submit-form-success-form3" triggered');
+    setTimeout(() => initializeScript(authorsFromArticle, recentReviewers, proposedAuthors, proposedAffiliations, affiliationsFromArticle), 100);
+ // Re-run your script after the form submits
+     });
+  
+  }, 100); // Closes the setTimeout
+});
+// Extracted your main logic into a reusable function
+
+function initializeScript(authorsFromArticle, recentReviewers, proposedAuthors, proposedAffiliations, affiliationsFromArticle) {
+  setTimeout(async function () {
+    console.log("Page loaded or form submitted, initializing script...");
+    const submitButton = document.querySelector('button[data-testid="button"][data-loading="false"][data-disabled="false"]');
+    
+    const reviewerFirstNameInput = document.querySelector('input[name="id-field1"]');
+    const reviewerLastNameInput = document.querySelector('input[name="47b08f44-d43d-404c-9aa5-6df43401ddae"]');
+    const reviewerEmailInput = document.querySelector('input[name="6a000ec7-f4fd-41fc-8971-f039d287af6c"]');
+    const validationMessage = document.getElementById("validation-message");
+    const backupCheckbox = document.querySelector('input[name="94fbd810-f84f-4564-bb30-a80287811fb4"]'); // Invite Backup checkbox
+    const affiliationInput = document.querySelector('input[name="b799f9c8-2f86-493c-99e0-8b666c32ae3a"]'); // Affiliation input field
+    const affiliationCheckbox = document.querySelector('input[name="31c57c74-398e-41e0-911c-f9f577a29f30"]');
+
+    console.log("Elements selected:", { submitButton, reviewerFirstNameInput, reviewerLastNameInput, reviewerEmailInput, validationMessage, backupCheckbox, affiliationInput });
+
+    if (submitButton) {
+      submitButton.style.pointerEvents = "none";
+      submitButton.style.opacity = "0.5";
+      console.log("Next button made unclickable");
+    } else {
+      console.log("Next button not found");
+    }
+
+    // Attach event listeners
+    if (reviewerFirstNameInput) {
+      reviewerFirstNameInput.addEventListener("input", validateAuthorInput);
+    }
+
+    if (reviewerLastNameInput) {
+      reviewerLastNameInput.addEventListener("input", validateAuthorInput);
+    }
+
+    if (reviewerEmailInput) {
+      reviewerEmailInput.addEventListener("input", validateAuthorInput);
+    }
+
+    if (affiliationInput) {
+      affiliationInput.addEventListener("input", validateAuthorInput);
+      console.log("Tracking input for affiliation");
+    }
+
+    if (backupCheckbox) {
+      backupCheckbox.addEventListener("change", validateAuthorInput);
+    }
+
+    if (affiliationCheckbox) {
+      affiliationCheckbox.addEventListener("change", validateAuthorInput);
+    }
+
+    async function validateAuthorInput() {
+      const reviewerFirstName = reviewerFirstNameInput.value.trim().toLowerCase();
+      const reviewerLastName = reviewerLastNameInput.value.trim().toLowerCase();
+      const reviewerEmail = reviewerEmailInput.value.trim().toLowerCase();
+      const affiliation = affiliationInput ? affiliationInput.value.trim().toLowerCase() : '';
+      const emailDomain = reviewerEmail.split('@')[1];
+      const isBackupChecked = backupCheckbox.checked;
+      const affiliationChecked = affiliationCheckbox.checked;
+
+      console.log("Validating reviewer inputs...");
+      let isValid = true;
+      let errorMessage = "";
+
+      // Validation logic
+      const excludedDomainsKeywords = ["gmail", "yahoo", "hotmail", "aol"];
+      const isExcludedDomain = excludedDomainsKeywords.some(keyword => emailDomain.includes(keyword));
+
+      const isAffiliationMatch = affiliationsFromArticle.some(articleAffiliation => {
+            if (!articleAffiliation || !affiliation) {
+                console.warn("One of the values is undefined:", { articleAffiliation, affiliation });
+                return false;
+            }
+            return articleAffiliation.includes(affiliation) || affiliation.includes(articleAffiliation);
+        });
+
+      function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
+      }
+
+      const isAuthorMatch = authorsFromArticle.some(author => {
+        if (author.lastName === reviewerLastName) {
+          if (author.isLastFirst) {
+            return author.firstName.startsWith(reviewerFirstName[0]);
+          } else {
+            return author.firstName === reviewerFirstName;
+          }
+        }
+        return false;
+      });
+
+      const isProposedReviewerMatch = proposedAuthors.some(proposedReviewer => {
+        return (proposedReviewer.firstName === reviewerFirstName && proposedReviewer.lastName === reviewerLastName) ||
+               (proposedReviewer.email === reviewerEmail);
+      });
+
+      // Additional validation steps
+      if (reviewerFirstName === "" || reviewerLastName === "" || reviewerEmail === "" || !validateEmail(reviewerEmail)) {
+        isValid = false;
+      } else if (isAuthorMatch) {
+        errorMessage = "The reviewer is an author of the article.";
+        isValid = false;
+      } else if (isAffiliationMatch && !affiliationChecked) { 
+        errorMessage = "The reviewer's affiliation matches an article affiliation. Please check 'Affiliation COI' to proceed.";
+        isValid = false;
+      } else if (recentReviewers.some(reviewer => reviewer.email === reviewerEmail || (reviewer.firstName === reviewerFirstName && reviewer.lastName === reviewerLastName))) { 
+        errorMessage = "The reviewer is a recent reviewer.";
+        isValid = false;
+      } else if (isProposedReviewerMatch) {
+        errorMessage = "The reviewer is already a proposed reviewer.";
+        isValid = false;
+      } else if (!isExcludedDomain && proposedAuthors.some(author => author.email && author.email.split('@')[1] === emailDomain) && !isBackupChecked) {
+        const matchingReviewers = proposedAuthors
+          .filter(author => author.email && author.email.split('@')[1] === emailDomain)
+          .map(author => `${author.firstName} ${author.lastName}`)
+          .join(", ");
+        
+        errorMessage = `The reviewer email domain "${emailDomain}" matches the proposed reviewer(s): ${matchingReviewers}. Please check 'Invite Backup' to proceed.`;
+        isValid = false;
+      } else if (affiliation && proposedAffiliations.includes(affiliation) && !isBackupChecked) {
+        errorMessage = "The affiliation you entered is already associated with a proposed reviewer. Please check 'Invite Backup?' to proceed.";
+        isValid = false;
+      }
+
+      validationMessage.innerText = errorMessage;
+      validationMessage.style.color = "#de350b";
+      validationMessage.style.display = isValid ? "none" : "block";
+
+      if (submitButton) {
+        submitButton.style.pointerEvents = isValid ? "auto" : "none";
+        submitButton.style.opacity = isValid ? "1" : "0.5";
+        console.log(`Next button ${isValid ? "made clickable" : "made unclickable again"}`);
+      }
+    }
+  }, 100); // Delay for setTimeout
+}
+
+
+</script>
+
+
