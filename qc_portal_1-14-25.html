@@ -175,7 +175,7 @@
        
                     fields.preprintId = fields["Preprint ID (pulled)"];
                     fields.Taken = fields.Taken !== undefined ? fields.Taken : false;
-                    fields["Taken Email"] = fields["Taken Email"] !== undefined ? fields["Taken Email"] : null;
+                    fields["Taken Email"] = fields["Taken Email"] !== undefined ? fields["Taken Email"] : "";
         
                     delete fields["Preprint ID (pulled)"];
                     return { id: record.id, ...fields };
@@ -198,100 +198,108 @@
             // Set default values if they are undefined or missing
             fields.preprintId = fields["Preprint ID (pulled)"];
             fields.Taken = fields.Taken !== undefined ? fields.Taken : false;
-            fields["Taken Email"] = fields["Taken Email"] !== undefined ? fields["Taken Email"] : null;
+            fields["Taken Email"] = fields["Taken Email"] !== undefined ? fields["Taken Email"] : "";
 
             delete fields["Preprint ID (pulled)"];
             return { id: response.data.id, ...fields };
         }
 
 
-        async function updateAirtable(recordId, fieldName, currentValue) {
-            const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
-            const headers = { Authorization: `Bearer ${airtableToken}`, 'Content-Type': 'application/json' };
-            
-            // Create a data object with only the field that is being updated
-            let data = {
-                fields: {
-                    [fieldName]: currentValue
-                }
-            };
-        
-            // If the "Status" field is being updated, also add the "Email of Quality Checker" and "Date of Quality Check"
-            if (fieldName === "Status") {
-                const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
-                data.fields['Email of Quality Checker'] = userEmail;
-                data.fields['Date of Quality Check'] = currentDate;
-            }
-            /* const data = {
-                fields: {
-                    [fieldName]: currentValue,
-                    'Email of Quality Checker': userEmail, 
-                    'Date of Quality Check': currentDate
-                }
-            };*/
+ 
+      
+async function updateAirtable(recordId, fieldsToUpdate, lastKnownRevision) {
+  const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`;
+  const headers = {
+    Authorization: `Bearer ${airtableToken}`,
+    'Content-Type': 'application/json',
+  };
 
-            try {
-                await axios.patch(url, data, { headers });
-                console.log(`Updated record ${recordId}: ${fieldName} = ${currentValue}`);
-            } catch (error) {
-                console.error(`Error updating record ${recordId}:`, error);
-            }
-        }
-async function claimAndEditRow(cell) {
-    const row = cell.getRow();
-    const recordId = row.getData().id;
-    const userEmail = window['logged_in_user']['softr_user_email'];
-    const buttonElement = cell.getTable().getRow(recordId).getCell("expandView").getElement().buttonElement;
+  // Optional concurrency check:
+  // if (lastKnownRevision) headers['If-Match'] = lastKnownRevision;
 
-    // Fetch the latest data for the record to ensure we are working with the most recent information
-    const latestData = await fetchRowData(recordId);
+  // fieldsToUpdate should look like { Taken: true, "Taken Email": "someone@example.com" }
+  console.log("Patching Airtable with:", fieldsToUpdate);
 
-    // Check if the row is already claimed by someone else
-    /*if (latestData["Taken"] && latestData["Taken Email"] !== userEmail) {
-        alert("This record is already taken by another user.");
-        row.update(latestData); // Refresh the row to show the latest data
-        buttonElement.disabled = true;
-        buttonElement.style.cursor = "not-allowed";
-        buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
-        return false; // Prevent further editing
-    } */
-    
-    if (latestData["Taken"] && latestData["Taken Email"] !== userEmail) {
-        latestData["Taken"] = true;
-        latestData["Taken Email"] = userEmail;
-        await updateAirtable(recordId, "Taken", true);
-        await updateAirtable(recordId, "Taken Email", userEmail);
-        row.update(latestData); // Update the UI
-        buttonElement.disabled = false;
-        buttonElement.style.cursor = "pointer";
-        buttonElement.style.backgroundColor = "#4ebdd2"; // Enable the button
-        return true; // Allow editing after claiming
-    }
-    else if (latestData["Taken"] && latestData["Taken Email"] === userEmail) { // If the row is already claimed by the current user, allow them to unclaim it
-        latestData["Taken"] = false;
-        latestData["Taken Email"] = null;
-        await updateAirtable(recordId, "Taken", false);
-        await updateAirtable(recordId, "Taken Email", null);
-        row.update(latestData); // Update the UI
-        buttonElement.disabled = true;
-        buttonElement.style.cursor = "not-allowed";
-        buttonElement.style.backgroundColor = "#ccc"; // Indicate disabled state
-        return false; // Prevent further editing until they re-claim it
-    } else if (!latestData["Taken"]) {  // If the row is not claimed, allow the current user to claim it
-        latestData["Taken"] = true;
-        latestData["Taken Email"] = userEmail;
-        await updateAirtable(recordId, "Taken", true);
-        await updateAirtable(recordId, "Taken Email", userEmail);
-        row.update(latestData); // Update the UI
-        buttonElement.disabled = false;
-        buttonElement.style.cursor = "pointer";
-        buttonElement.style.backgroundColor = "#4ebdd2"; // Enable the button
-        return true; // Allow editing after claiming
-    }
+  // Prepare the data object for the PATCH
+  const data = { fields: fieldsToUpdate };
 
-    return true;
+  // (If "Status" is one of the keys, handle date/email logic here)
+  if ("Status" in fieldsToUpdate) {
+    const currentDate = new Date().toISOString().split('T')[0];
+    data.fields["Email of Quality Checker"] = userEmail;
+    data.fields["Date of Quality Check"] = currentDate;
+  }
+
+  try {
+    let response = await axios.patch(url, data, { headers });
+    console.log(`Updated record ${recordId}:`, fieldsToUpdate);
+    return response;
+  } catch (error) {
+    console.error("Error updating Airtable:", error);
+    alert("An error occurred while updating. Please try again.");
+    throw error;
+  }
 }
 
+// (Assuming you have some global or higher-scope variable):
+let conflictLocks = {}; 
+// e.g., an object keyed by recordId to track whether we’ve already shown the conflict
+
+async function claimAndEditRow(cell) {
+  const row = cell.getRow();
+  const recordId = row.getData().id;
+  const userEmail = window['logged_in_user']['softr_user_email'];
+    const buttonElement = cell.getTable().getRow(recordId).getCell("expandView").getElement().buttonElement;
+
+  // 1) Clear any prior concurrency lock if it's been a while 
+  //    (Optional: you might reset these locks after some short interval)
+  if (conflictLocks[recordId]) {
+    console.log(`Existing conflictLock found for recordId=${recordId}`);
+  }
+
+  // 2) Always fetch the latest row
+  const freshData = await fetchRowData(recordId);
+
+  // 3) If freshData says “Taken” by someone else, show alert only if not shown before
+  if (freshData["Taken"] && freshData["Taken Email"] !== userEmail) {
+    if (!conflictLocks[recordId]) {
+      alert("This row is already claimed by another user!");
+      conflictLocks[recordId] = true; 
+      // sets the lock so we don’t spam them with repeated alerts
+    }
+    buttonElement.disabled = true;
+    buttonElement.style.cursor = "pointer";
+    buttonElement.style.backgroundColor = "#ccc"; // disable the button
+    row.update(freshData);
+    return false;
+  }
+
+  // 4) If row is claimed by me, unclaim it
+  if (freshData["Taken"] && freshData["Taken Email"] === userEmail) {
+    await updateAirtable(recordId, { "Taken": false, "Taken Email": "" });
+    const updated = await fetchRowData(recordId);
+    row.update(updated);
+    buttonElement.disabled = true;
+    buttonElement.style.cursor = "not-allowed";
+    buttonElement.style.backgroundColor = "#ccc";
+    // Clear conflict lock if it was set
+    conflictLocks[recordId] = false;
+    return false;
+  }
+
+  // 5) Otherwise, claim fresh
+  await updateAirtable(recordId, { "Taken": true, "Taken Email": userEmail });
+  const updated = await fetchRowData(recordId);
+  row.update(updated);
+  buttonElement.disabled = false;
+    buttonElement.style.cursor = "pointer";
+    buttonElement.style.backgroundColor = "#4ebdd2";
+  // Clear conflict lock if it was set
+  conflictLocks[recordId] = false;
+  return true;
+}
+
+        
 
 
 
@@ -510,11 +518,11 @@ async function claimAndEditRow(cell) {
     
                 // Optionally, update Airtable directly from here
                 const recordId = row.getData().id;
-                updateAirtable(recordId, field, newValue);
+                updateAirtable(recordId, { [field]: newValue });
             });
         });
 
-        // Toggle between displaying the link and input field on double-click or right-click
+        
         // Toggle between displaying the link and input field on double-click or right-click
 const editableLinks = container.querySelectorAll('.editable-link');
 editableLinks.forEach(linkContainer => {
@@ -786,6 +794,20 @@ function viewButtonFormatter(cell, formatterParams, onRendered) {
 
         fetchData().then(data => {
             console.log('Fetched data:', data);
+             function customNameFilter(headerValue, rowValue, rowData, filterParams) {
+                  // If no text typed into the filter, show all rows
+                  if (!headerValue) {
+                    return true;
+                  }
+                
+                  // If the row is missing this field, it can't match
+                  if (!rowValue) {
+                    return false;
+                  }
+                
+                  // Convert both sides to lowercase and see if the row’s value includes the typed text
+                  return rowValue.toLowerCase().includes(headerValue.toLowerCase());
+                }
             //const columns = Object.keys(data[0]).map(key => ({ title: key, field: key }));
             /*
             const columns = Object.keys(data[0])
@@ -940,9 +962,27 @@ function viewButtonFormatter(cell, formatterParams, onRendered) {
                         }
                     } 
                 },
-                { title: "Reviewer First Name", field: "First Name (Proposed Reviewer)" },
-                { title: "Reviewer Last Name", field: "Last Name (Proposed Reviewer)" },
-                { title: "Reviewer Email", field: "Reviewer Email" },
+               {
+                  title: "Reviewer First Name",
+                  field: "First Name (Proposed Reviewer)",
+                  headerFilter: "input",
+                  headerFilterPlaceholder: "Search First Name",
+                  headerFilterFunc: customNameFilter
+                },
+                {
+                  title: "Reviewer Last Name",
+                  field: "Last Name (Proposed Reviewer)",
+                  headerFilter: "input",
+                  headerFilterPlaceholder: "Search Last Name",
+                  headerFilterFunc: customNameFilter
+                },
+                {
+                  title: "Reviewer Email",
+                  field: "Reviewer Email",
+                  headerFilter: "input",
+                  headerFilterPlaceholder: "Search Email (Domain)",
+                  headerFilterFunc: customNameFilter
+                },
                 
                 { title: "Student Reply Comments", field: "Student Reply Comments", headerSort: false, width: "fitData"  },
                 { title: "Student Reject Reason", field: "Student Reject Reason", headerSort: false, width: "fitData"  },
@@ -987,7 +1027,14 @@ function viewButtonFormatter(cell, formatterParams, onRendered) {
                     } 
                 },
                 { title: "Justification for Invite", field: "Justification for Invite" },
-                { title: "Student", field: "Student" },
+             
+                {
+                  title: "Student",
+                  field: "Student",
+                  headerFilter: "input",
+                  headerFilterPlaceholder: "Search Last Name",
+                  headerFilterFunc: customNameFilter
+                 },
                 { title: "Student Email", field: "Student Email" },
                 { title: "Email of Quality Checker", field: "Email of Quality Checker" },
                 { title: "Date of Proposal", field: "Date of Proposal" },
@@ -1111,82 +1158,75 @@ function viewButtonFormatter(cell, formatterParams, onRendered) {
         });
 
 table.on("cellEditing", async function(cell) {
-    const fieldName = cell.getColumn().getField();
-    if (cell.getColumn().getField() === "view" && cell.getColumn().getDefinition().formatter === viewButtonFormatter) {
-        viewRowPopupFormatter(cell.getRow());  // Open the row view popup
-        return;  // Bypass further checks
-    }
-    if (fieldName === "Taken") {
-        // If the "Taken" cell is clicked, handle row claiming
-        const canEdit = await claimAndEditRow(cell);
-        console.log("can edit: " + canEdit);
-        if (!canEdit) {
-            cell.cancelEdit(); // Prevent editing if the row cannot be claimed
-            return;
-        }
-    } else {
-        // If any other cell is clicked, check if the row is claimed by the current user
-        const row = cell.getRow();
-        const currentData = row.getData();
-        const userEmail = window['logged_in_user']['softr_user_email'];
+  const fieldName = cell.getColumn().getField();
 
-        if (!currentData["Taken"] || currentData["Taken Email"] !== userEmail) {
-            alert("You cannot edit this row because it is either not taken or taken by another user.");
-            cell.cancelEdit(); // Prevent editing if the row is not claimed or claimed by another user
-            return;
-        }
-    }
+  // 1) If the user is editing the "view" column, skip concurrency checks:
+  if (fieldName === "view") {
+    // Usually you call viewRowPopupFormatter(cell.getRow()); or so,
+    // but no concurrency checks are needed because "view" is always allowed.
+    // cell.cancelEdit(); // you can optionally cancel the edit if needed
+    return;
+  }
 
-    // Proceed with the rest of the editing logic after confirming the row can be edited
-    const row = cell.getRow();
-    const recordId = row.getData().id;
-    const latestData = await fetchRowData(recordId);
+  // 2) If the user tries to edit the "Taken" field, handle row claiming/unclaiming logic:
+  if (fieldName === "Taken") {
+    const canEdit = await claimAndEditRow(cell);
+    if (!canEdit) cell.cancelEdit();
+    return;
+  }
 
-    let dataChanged = false;
-    const columns = table.getColumnDefinitions();
+  // 3) For any other field, confirm the row is still claimed by the current user:
+  const row = cell.getRow();
+  const recordId = row.getData().id;
+  const userEmail = window['logged_in_user']['softr_user_email'];
 
-    for (const column of columns) {
-        const field = column.field;
-        const editor = column.editor;
-        if (editor && currentData[field] !== undefined) {
-            const currentValue = currentData[field];
-            const latestValue = latestData[field];
-            if (typeof currentValue === 'object' || typeof latestValue === 'object') {
-                if (JSON.stringify(currentValue) !== JSON.stringify(latestValue)) {
-                    dataChanged = true;
-                }
-            } else if (currentValue !== latestValue) {
-                dataChanged = true;
-            }
-        }
-    }
+  const freshData = await fetchRowData(recordId);
+  if (!freshData["Taken"] || freshData["Taken Email"] !== userEmail) {
+    alert("This row is NOT claimed by you. You cannot edit it.");
+    row.update(freshData); // refresh to reflect actual state
+    cell.cancelEdit();
+    return;
+  }
 
-    if (dataChanged) {
-        row.update(latestData); // Refresh the row with the latest data
-    }
+  // If we get here, it’s still claimed by me, so editing is allowed.
 });
 
 
 
 
-        // Function to handle actions after a cell has been edited
-table.on("cellEdited", async function(cell) {
-    const row = cell.getRow();
-    const fieldName = cell.getColumn().getField();
-    const recordId = row.getData().id;
-    const currentValue = cell.getValue();
 
-    // Log the changes
-    console.log(`Cell edited: Record Id: ${recordId}, Field: ${fieldName}, New Value: ${currentValue}`);
 
-    // Update Airtable with the new value
-    await updateAirtable(recordId, fieldName, currentValue);
-    
-});
 
-        }).catch(error => {
-            console.error('Error fetching data from Airtable:', error);
+     
+        table.on("cellEdited", async function(cell) {
+          const row = cell.getRow();
+          const recordId = row.getData().id;
+          const fieldName = cell.getColumn().getField();
+          const currentValue = cell.getValue();
+        
+          // *** 1) Skip if it's the "view" or "expandView" field ***
+          // (or any field that doesn't really exist in Airtable)
+          if (fieldName === "view" || fieldName === "expandView") {
+            // do NOT call updateAirtable
+            // do NOT do concurrency checks
+            return;
+          }
+        
+          // *** 2) Otherwise, do your normal patch ***
+          console.log(`Cell edited: Id=${recordId}, Field=${fieldName}, Value=${currentValue}`);
+          
+          // Only patch this single field if it's not "Taken" or "Taken Email"
+          // (since we handle those together in claimAndEditRow).
+          if (fieldName !== "Taken" && fieldName !== "Taken Email") {
+            await updateAirtable(recordId, { [fieldName]: currentValue });
+          }
         });
+
+
+
+}).catch(error => {
+            console.error('Error fetching data from Airtable:', error);
+});
 
                 
         // Add event listeners to filter buttons
